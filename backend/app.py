@@ -1024,8 +1024,10 @@ def serve(path):
     response.headers['Pragma'] = 'no-cache'
     return response
 
+# Inicializar banco ao carregar o módulo (necessário para gunicorn)
+init_db()
+
 if __name__ == '__main__':
-    init_db()
     print("\n✅ Sistema RH iniciado em http://localhost:5000")
     print("📧 Login: admin@empresa.com | Senha: admin123\n")
     port = int(os.environ.get('PORT', 5000))
