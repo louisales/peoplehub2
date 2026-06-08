@@ -1,0 +1,20 @@
+[Unit]
+Description=PeopleHub - Sistema de Gestão de Pessoas
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/peoplehub
+Environment="PATH=/opt/peoplehub/venv/bin"
+ExecStart=/opt/peoplehub/venv/bin/gunicorn -c gunicorn.conf.py backend.app:app
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+
+# Logs
+StandardOutput=append:/var/log/peoplehub/app.log
+StandardError=append:/var/log/peoplehub/error.log
+
+[Install]
+WantedBy=multi-user.target

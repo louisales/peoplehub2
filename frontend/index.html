@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valore Hub — Gestão de Pessoas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,500;1,300&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link href="/css/main.css" rel="stylesheet">
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="login-page" class="login-page">
+  <div class="login-left">
+    <div class="login-brand">
+      <div class="brand-mark">P</div>
+      <div>
+        <div class="brand-name">Valore Hub</div>
+        <div class="brand-tagline">Gestão de Pessoas</div>
+      </div>
+    </div>
+    <div class="login-headline">
+      <span class="headline-serif">Pessoas</span> no centro<br>de cada decisão.
+    </div>
+    <div class="login-features">
+      <div class="feature-pill"><i class="fa-solid fa-users-gear"></i> Desenvolvimento de Talentos</div>
+      <div class="feature-pill"><i class="fa-solid fa-comments"></i> Comunicação Interna</div>
+      <div class="feature-pill"><i class="fa-solid fa-file-contract"></i> Gestão de RH</div>
+      <div class="feature-pill"><i class="fa-solid fa-heart-pulse"></i> Cultura de Empresa</div>
+      <div class="feature-pill"><i class="fa-solid fa-gears"></i> Operações</div>
+    </div>
+  </div>
+  <div class="login-right">
+    <div class="login-card">
+      <h2>Bem-vindo de volta</h2>
+      <p class="login-subtitle">Acesse sua conta para continuar</p>
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>E-mail corporativo</label>
+          <input type="email" id="login-email" placeholder="seu@empresa.com" required>
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <div class="input-with-icon">
+            <input type="password" id="login-password" placeholder="••••••••" required>
+            <button type="button" class="eye-btn" onclick="togglePassword()"><i class="fa-regular fa-eye"></i></button>
+          </div>
+        </div>
+        <div id="login-error" class="error-msg" style="display:none"></div>
+        <button type="submit" class="btn-primary btn-full" id="login-btn">
+          <span>Entrar</span> <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app" style="display:none">
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-mark-sm">P</div>
+      <div class="brand-text">
+        <div class="brand-name-sm">Valore Hub</div>
+      </div>
+      <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-item" onclick="navigate('dashboard')">
+        <i class="fa-solid fa-chart-pie"></i><span>Dashboard</span>
+      </div>
+
+      <div class="nav-section-label" data-section="dev">Desenvolvimento</div>
+      <div class="nav-item nav-parent" data-section="dev" onclick="toggleSubmenu('dev')">
+        <i class="fa-solid fa-users-gear"></i><span>Dev. de Talentos</span><i class="fa-solid fa-chevron-down nav-arrow" id="arrow-dev"></i>
+      </div>
+      <div class="nav-submenu" data-section="dev" id="sub-dev">
+        <div class="nav-sub-item" onclick="navigate('dev-pesquisas')"><i class="fa-solid fa-magnifying-glass-chart"></i> Pesquisas</div>
+        <div class="nav-sub-item" onclick="navigate('dev-avaliacao')"><i class="fa-solid fa-star-half-stroke"></i> Avaliação de Desempenho</div>
+        <div class="nav-sub-item" onclick="navigate('dev-aprendizado')"><i class="fa-solid fa-graduation-cap"></i> Aprendizado</div>
+        <div class="nav-sub-item" onclick="navigate('dev-pdv')"><i class="fa-solid fa-route"></i> Plano de Desenvolvimento</div>
+      </div>
+
+      <div class="nav-section-label">Recursos Humanos</div>
+      <div class="nav-item nav-parent" onclick="toggleSubmenu('rh')">
+        <i class="fa-solid fa-file-contract"></i><span>Gestão de RH</span><i class="fa-solid fa-chevron-down nav-arrow" id="arrow-rh"></i>
+      </div>
+      <div class="nav-submenu" id="sub-rh">
+        <div class="nav-sub-item" onclick="navigate('rh-colaboradores')"><i class="fa-solid fa-id-card"></i> Perfil do Colaborador</div>
+        <div class="nav-sub-item" onclick="navigate('rh-admissional')"><i class="fa-solid fa-file-circle-plus"></i> Documentos Admissionais</div>
+        <div class="nav-sub-item" onclick="navigate('rh-onboarding')"><i class="fa-solid fa-door-open"></i> Onboarding</div>
+        <div class="nav-sub-item" onclick="navigate('rh-ferias')"><i class="fa-solid fa-umbrella-beach"></i> Férias e Licença</div>
+        <div class="nav-sub-item" onclick="navigate('rh-arquivos')"><i class="fa-solid fa-folder-open"></i> Arquivos</div>
+        <div class="nav-sub-item" onclick="navigate('rh-politicas')"><i class="fa-solid fa-book"></i> Políticas de Empresa</div>
+      </div>
+
+      <div class="nav-section-label">Cultura</div>
+      <div class="nav-item nav-parent" onclick="toggleSubmenu('cultura')">
+        <i class="fa-solid fa-heart-pulse"></i><span>Cultura de Empresa</span><i class="fa-solid fa-chevron-down nav-arrow" id="arrow-cultura"></i>
+      </div>
+      <div class="nav-submenu" id="sub-cultura">
+        <div class="nav-sub-item" onclick="navigate('cultura-referencia')"><i class="fa-solid fa-user-plus"></i> Programa de Referência</div>
+        <div class="nav-sub-item" onclick="navigate('cultura-experiencia')"><i class="fa-solid fa-face-smile-beam"></i> Experiência de Pessoas</div>
+        <div class="nav-sub-item" onclick="navigate('cultura-aniversarios')"><i class="fa-solid fa-cake-candles"></i> Aniversários</div>
+        <div class="nav-sub-item" onclick="navigate('cultura-eventos')"><i class="fa-solid fa-calendar-star"></i> Eventos</div>
+        <div class="nav-sub-item" onclick="navigate('cultura-reconhecimentos')"><i class="fa-solid fa-trophy"></i> Reconhecimentos</div>
+      </div>
+
+      <div class="nav-section-label">Comunicação</div>
+      <div class="nav-item nav-parent" onclick="toggleSubmenu('comm')">
+        <i class="fa-solid fa-comments"></i><span>Comunicação Interna</span><i class="fa-solid fa-chevron-down nav-arrow" id="arrow-comm"></i>
+      </div>
+      <div class="nav-submenu" id="sub-comm">
+        <div class="nav-sub-item" onclick="navigate('comm-feed')"><i class="fa-solid fa-newspaper"></i> Feed / Rede Interna</div>
+        <div class="nav-sub-item" onclick="navigate('comm-noticias')"><i class="fa-solid fa-bullhorn"></i> Notícias</div>
+        <div class="nav-sub-item" onclick="navigate('comm-organograma')"><i class="fa-solid fa-sitemap"></i> Organograma</div>
+        <div class="nav-sub-item" onclick="navigate('comm-biblioteca')"><i class="fa-solid fa-book-bookmark"></i> Biblioteca do Conhecimento</div>
+        <div class="nav-sub-item" onclick="navigate('comm-documentos')"><i class="fa-solid fa-folder-open"></i> Documentos</div>
+        <div class="nav-sub-item" onclick="navigate('comm-beneficios')"><i class="fa-solid fa-gift"></i> Vantagens e Benefícios</div>
+      </div>
+
+      <div class="nav-section-label">Operações</div>
+      <div class="nav-item nav-parent" onclick="toggleSubmenu('ops')">
+        <i class="fa-solid fa-gears"></i><span>Operações</span><i class="fa-solid fa-chevron-down nav-arrow" id="arrow-ops"></i>
+      </div>
+      <div class="nav-submenu" id="sub-ops">
+        <div class="nav-sub-item" onclick="navigate('ops-servicos')"><i class="fa-solid fa-ticket"></i> Gerenciamento de Serviços</div>
+        <div class="nav-sub-item" onclick="navigate('ops-formularios')"><i class="fa-solid fa-list-check"></i> Formulários e Aprovações</div>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user" data-section="settings" onclick="navigate('settings')">
+        <div class="user-avatar-sm" id="sidebar-avatar">A</div>
+        <div class="user-info-sm">
+          <div id="sidebar-name">Usuário</div>
+          <div id="sidebar-role">Administrador</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="handleLogout()" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="main-content">
+    <div id="page-container"></div>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay" class="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-box" id="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-title">Título</h3>
+      <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/components.js"></script>
+<script src="/js/pages.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>
