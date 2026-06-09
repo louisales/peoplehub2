@@ -121,6 +121,7 @@ const routes = {
   ]}),
   'dev-pdv': renderPDV,
   'dev-pdi360': renderPDI360,
+  'dev-disc-perfis': renderDISCPerfis,
   // RH
   'rh-colaboradores': renderColaboradores,
   'rh-admissional': genericListPage({ icon:'fa-file-circle-plus', title:'Documentos Admissionais', area:'rh', module:'admissional', emptyText:'Registre documentos e checklists de admissão.', fields:[
