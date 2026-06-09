@@ -368,9 +368,9 @@ async function openEmployeeDetail(id) {
       </div>
     </div>
     <div style="display:flex;gap:8px;border-bottom:2px solid var(--border);margin-bottom:16px">
-      <button onclick="showEmpTab('info')" id="tab-info" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px">Informações</button>
-      <button onclick="showEmpTab('history')" id="tab-history" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-2)">Histórico de Carreira</button>
-      <button onclick="showEmpTab('disc')" id="tab-disc" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-2)">DISC</button>
+      <button onclick="showEmpTab('info','${e.id}')" id="tab-info" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px">Informações</button>
+      <button onclick="showEmpTab('history','${e.id}')" id="tab-history" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-2)">Histórico de Carreira</button>
+      <button onclick="showEmpTab('disc','${e.id}')" id="tab-disc" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-2)">DISC</button>
     </div>
     <div id="emp-tab-info">
       <div class="detail-grid">
