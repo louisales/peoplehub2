@@ -426,10 +426,10 @@ async function loadDiscTab(empId) {
     return;
   }
   const DISC_DESC = {
-    D: { label: 'Dominância', color: '#ef4444', desc: 'Orientado a resultados, direto, decidido e competitivo. Aprecia desafios e age com rapidez para alcançar metas.', strengths: 'Foco em resultados, tomada de decisão ágil, determinação', development: 'Desenvolver escuta ativa, paciência e atenção ao impacto sobre a equipe' },
-    I: { label: 'Influência', color: '#f59e0b', desc: 'Comunicativo, entusiasta e persuasivo. Motiva pessoas e constrói relacionamentos com facilidade.', strengths: 'Comunicação, engajamento da equipe, criatividade', development: 'Aprimorar organização, foco nos detalhes e disciplina na execução' },
-    S: { label: 'Estabilidade', color: '#22c55e', desc: 'Paciente, confiável e colaborativo. Valoriza harmonia, consistência e trabalho em equipe.', strengths: 'Confiabilidade, suporte à equipe, consistência nas entregas', development: 'Desenvolver assertividade, adaptação a mudanças e posicionamento' },
-    C: { label: 'Conformidade', color: '#3b82f6', desc: 'Analítico, preciso e sistemático. Valoriza qualidade, exatidão e segue processos com rigor.', strengths: 'Precisão técnica, análise crítica, atenção aos detalhes', development: 'Desenvolver agilidade na decisão, comunicação interpessoal e tolerância à ambiguidade' }
+    D: { label: 'Executor', color: '#ef4444', desc: 'Ativo, competitivo, otimista e dinâmico. Age com rapidez, assume riscos e busca resultados concretos.', strengths: 'Proatividade, liderança sob pressão, energia para superar metas', development: 'Desenvolver paciência, escuta ativa e respeito ao ritmo da equipe', valore_context: 'Destaca-se em liderança de equipe, fechamentos críticos e gestão de demandas urgentes.' },
+    I: { label: 'Comunicador', color: '#f59e0b', desc: 'Extrovertido, falante, adaptável e ativo. Constrói relacionamentos com facilidade e energiza os ambientes.', strengths: 'Comunicação fluida, trabalho em equipe, adaptabilidade', development: 'Aprimorar disciplina, organização e foco em detalhes técnicos', valore_context: 'Essencial no atendimento ao cliente, cultura interna e engajamento de equipes.' },
+    S: { label: 'Planejador', color: '#22c55e', desc: 'Calmo, prudente e com muito autocontrole. Pilar de estabilidade, confiável e sempre disposto a ajudar.', strengths: 'Autocontrole, comprometimento com rotina e apoio à equipe', development: 'Desenvolver assertividade e flexibilidade diante de imprevistos', valore_context: 'Base operacional sólida — entrega consistente e suporte ao trabalho em equipe.' },
+    C: { label: 'Analista', color: '#3b82f6', desc: 'Detalhista, preciso, cauteloso e crítico. Busca a perfeição e não abre mão da qualidade técnica.', strengths: 'Atenção aos detalhes, método, precisão e rigor técnico', development: 'Desenvolver agilidade decisória e tolerância à pressão', valore_context: 'Guardião da qualidade técnica nos setores Contábil, Fiscal e DP.' }
   };
   const p = disc.dominant_profile;
   const info = DISC_DESC[p] || {};
@@ -2532,48 +2532,48 @@ async function deletePDI360(empId, pdiId) {
 // ── DISC DESCRIÇÕES COMPLETAS + EXPORTAÇÃO + TELA DE PERFIS ──────────────────
 const DISC_FULL = {
   D: {
-    label: 'Dominância', color: '#ef4444', emoji: '🔴',
-    desc: 'Orientado a resultados, direto, decidido e competitivo. Age com rapidez, aprecia desafios e toma decisões sem hesitar.',
-    valore_context: 'Na Valore, o perfil D se destaca na liderança de equipes, na condução de fechamentos fiscais críticos e na gestão de demandas urgentes. Sua orientação a resultados impulsiona a entrega, mas precisa equilibrar velocidade com atenção técnica.',
-    strengths: ['Foco intenso em resultados e metas', 'Tomada de decisão ágil sob pressão', 'Liderança natural em situações de crise', 'Determinação para superar obstáculos', 'Capacidade de priorização rápida'],
-    development: ['Desenvolver escuta ativa e empatia com a equipe', 'Maior atenção aos detalhes técnicos e processos', 'Paciência com ritmos diferentes na equipe', 'Comunicação mais colaborativa e menos impositiva', 'Valorizar o processo, não só o resultado final'],
-    roles: 'Supervisor, Analista Sênior, Gestor',
-    motivations: 'Desafios, autonomia, resultados claros e reconhecimento por conquistas',
-    fears: 'Perda de controle, ineficiência, ambiguidade e dependência excessiva',
-    communication: 'Direto e objetivo. Prefere comunicações curtas, focadas no que precisa ser feito.',
+    label: 'Executor', color: '#ef4444', emoji: '🔴',
+    desc: 'Ativo, competitivo, otimista e dinâmico. Age com rapidez, assume riscos e busca resultados concretos com energia e determinação.',
+    valore_context: 'Na Valore, o Executor se destaca na liderança de equipes, na condução de fechamentos críticos e na gestão de demandas urgentes. Sua energia e competitividade impulsionam resultados, e precisa equilibrar velocidade com escuta e colaboração.',
+    strengths: ['Proatividade e energia para agir com rapidez', 'Liderança natural em situações de pressão', 'Disposição para assumir riscos calculados', 'Foco em resultados e superação de metas', 'Otimismo que contagia e mobiliza a equipe'],
+    development: ['Desenvolver paciência com processos e pessoas', 'Maior escuta ativa e empatia com o time', 'Aprender a delegar sem perder o controle', 'Respeitar os ritmos diferentes dos colegas', 'Valorizar planejamento antes da execução'],
+    roles: 'Supervisor, Analista Sênior, Líder de Equipe',
+    motivations: 'Desafios, liderança, autonomia e liberdade para assumir riscos',
+    fears: 'Processos lentos, falta de autonomia e ambientes muito controlados',
+    communication: 'Direto e objetivo. Vai ao ponto sem rodeios e espera o mesmo dos outros.',
   },
   I: {
-    label: 'Influência', color: '#f59e0b', emoji: '🟡',
-    desc: 'Comunicativo, entusiasta e persuasivo. Motiva pessoas com facilidade, constrói relacionamentos sólidos e inspira o grupo.',
-    valore_context: 'Na Valore, o perfil I é essencial no atendimento ao cliente, na disseminação da cultura e no engajamento da equipe. Sua capacidade de construir relacionamentos fortalece a experiência do cliente e o ambiente interno, alinhado ao valor de "Compartilhar e Colaborar".',
-    strengths: ['Comunicação expressiva e persuasiva', 'Facilidade em engajar e motivar pessoas', 'Criatividade na resolução de problemas', 'Construção de relacionamentos com clientes', 'Energia positiva que contagia a equipe'],
-    development: ['Aprimorar organização e gestão do tempo', 'Maior foco nos detalhes técnicos e documentação', 'Disciplina na execução de tarefas repetitivas', 'Equilibrar entusiasmo com análise crítica', 'Desenvolver objetividade em relatórios e entregas'],
+    label: 'Comunicador', color: '#f59e0b', emoji: '🟡',
+    desc: 'Extrovertido, falante, adaptável e ativo. Constrói relacionamentos com facilidade e transforma ambientes com sua energia e entusiasmo.',
+    valore_context: 'Na Valore, o Comunicador é essencial no atendimento ao cliente, na disseminação da cultura e no engajamento do time. Sua versatilidade e facilidade de conexão fortalecem o valor de "Compartilhar e Colaborar" e a experiência do cliente.',
+    strengths: ['Comunicação fluida e persuasiva', 'Facilidade em trabalhar em equipe', 'Alta adaptabilidade a mudanças e contextos', 'Capacidade de motivar e engajar pessoas', 'Criatividade e espontaneidade nas soluções'],
+    development: ['Desenvolver disciplina e organização pessoal', 'Maior foco em tarefas repetitivas e detalhes técnicos', 'Aprender a lidar com rotinas estruturadas', 'Equilibrar comunicação com entrega objetiva', 'Aprofundar conhecimentos técnicos da área'],
     roles: 'Sucesso do Cliente, Comercial, Marketing, Analista Pleno',
-    motivations: 'Reconhecimento social, variedade, colaboração e liberdade criativa',
-    fears: 'Rejeição, isolamento, rotina excessiva e ambientes hostis',
-    communication: 'Expressivo e empático. Responde bem a elogios e ambientes de diálogo aberto.',
+    motivations: 'Falta de rotina, autonomia, trabalho em equipe e reconhecimento',
+    fears: 'Rigidez, monotonia e falta de reconhecimento pelo trabalho',
+    communication: 'Expressivo e empático. Responde bem a ambientes de diálogo aberto e reconhecimento.',
   },
   S: {
-    label: 'Estabilidade', color: '#22c55e', emoji: '🟢',
-    desc: 'Paciente, confiável e colaborativo. Valoriza harmonia, consistência e é o pilar de sustentação da equipe.',
-    valore_context: 'Na Valore, o perfil S representa a base operacional de qualidade — aquele que entrega com consistência, mantém os processos funcionando e cuida das pessoas ao redor. Alinhado ao valor "Trabalhar e Crescer Juntos", é o guardião da cultura de suporte mútuo.',
-    strengths: ['Consistência e confiabilidade nas entregas', 'Capacidade de suporte e mentoria a colegas', 'Paciência e equilíbrio em situações de pressão', 'Lealdade e comprometimento de longo prazo', 'Habilidade de seguir processos com rigor'],
-    development: ['Desenvolver assertividade e posicionamento', 'Maior adaptabilidade a mudanças e imprevistos', 'Aprender a dizer não quando necessário', 'Sair da zona de conforto para assumir novos desafios', 'Comunicar discordâncias de forma mais proativa'],
+    label: 'Planejador', color: '#22c55e', emoji: '🟢',
+    desc: 'Calmo, prudente e com muito autocontrole. É o pilar de estabilidade da equipe — confiável, consistente e sempre disposto a ajudar.',
+    valore_context: 'Na Valore, o Planejador representa a base operacional sólida — entrega com consistência, mantém os processos organizados e apoia os colegas ao redor. Alinhado ao valor "Trabalhar e Crescer Juntos", é o guardião da qualidade no dia a dia.',
+    strengths: ['Autocontrole e serenidade em situações de pressão', 'Comprometimento com planejamento e rotina', 'Disposição genuína para ajudar a equipe', 'Lealdade e confiabilidade nas entregas', 'Execução cuidadosa e metódica das tarefas'],
+    development: ['Desenvolver assertividade e posicionamento', 'Maior flexibilidade diante de imprevistos', 'Aprender a agir mesmo sem planejamento completo', 'Sair da zona de conforto para assumir novos desafios', 'Comunicar discordâncias de forma mais direta'],
     roles: 'Analista Júnior, Assistente, Analista Pleno, DP',
-    motivations: 'Estabilidade, harmonia no grupo, reconhecimento pela lealdade e ambiente seguro',
-    fears: 'Conflitos, mudanças repentinas, incerteza e pressão excessiva',
-    communication: 'Calmo e receptivo. Prefere conversas tranquilas, com espaço para ouvir e ser ouvido.',
+    motivations: 'Rotina, planejamento, estabilidade e poder ajudar os outros',
+    fears: 'Falta de disciplina, improviso e ambientes desorganizados',
+    communication: 'Calmo e receptivo. Prefere conversas estruturadas e com espaço para ouvir.',
   },
   C: {
-    label: 'Conformidade', color: '#3b82f6', emoji: '🔵',
-    desc: 'Analítico, preciso e sistemático. Valoriza qualidade, exatidão e segue normas e processos com rigor técnico.',
-    valore_context: 'Na Valore, o perfil C é o guardião da qualidade técnica — fundamental em setores Contábil, Fiscal e DP, onde precisão na aplicação da legislação e exatidão nos lançamentos são inegociáveis. Alinhado ao Culture Code "Somos extraordinários no que fazemos".',
-    strengths: ['Precisão técnica e atenção aos detalhes', 'Análise crítica aprofundada de processos', 'Rigor no cumprimento de normas e prazos', 'Capacidade de identificar inconsistências', 'Base sólida de conhecimento técnico e legislativo'],
-    development: ['Desenvolver agilidade na tomada de decisão', 'Melhorar comunicação interpessoal e empatia', 'Aprender a agir com informações incompletas', 'Maior tolerância a erros alheios e processos imperfeitos', 'Equilibrar perfeccionismo com produtividade'],
+    label: 'Analista', color: '#3b82f6', emoji: '🔵',
+    desc: 'Detalhista, preciso, cauteloso e crítico. Busca a perfeição em tudo que faz e não abre mão da qualidade técnica.',
+    valore_context: 'Na Valore, o Analista é o guardião da qualidade técnica — fundamental nos setores Contábil, Fiscal e DP, onde precisão na aplicação da legislação e exatidão nos lançamentos são inegociáveis. Alinhado ao Culture Code "Somos extraordinários no que fazemos".',
+    strengths: ['Atenção extrema aos detalhes e à precisão', 'Método e rigor na execução das tarefas', 'Capacidade crítica de identificar inconsistências', 'Busca constante pela perfeição nas entregas', 'Ambiente calmo favorece alta concentração e qualidade'],
+    development: ['Desenvolver agilidade na tomada de decisão', 'Aprender a agir com informações incompletas', 'Melhorar comunicação interpessoal e empatia', 'Equilibrar perfeccionismo com produtividade', 'Maior tolerância à pressão e a erros alheios'],
     roles: 'Analista Contábil, Analista Fiscal, Analista DP, Supervisor',
-    motivations: 'Qualidade, precisão, reconhecimento pela excelência técnica e autonomia para fazer certo',
-    fears: 'Erros, críticas injustas, processos desorganizados e improvisação',
-    communication: 'Formal e baseado em dados. Responde melhor a argumentos técnicos e evidências concretas.',
+    motivations: 'Perfeição, métodos bem definidos e ambientes calmos e organizados',
+    fears: 'Pressão excessiva, falta de garantias e ambientes com pouca segurança',
+    communication: 'Formal e baseado em dados. Responde melhor a argumentos técnicos e evidências.',
   }
 };
 
