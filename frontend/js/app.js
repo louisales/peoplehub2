@@ -120,6 +120,7 @@ const routes = {
     {key:'description',label:'Descrição',type:'textarea'},
   ]}),
   'dev-pdv': renderPDV,
+  'dev-pdi360': renderPDI360,
   // RH
   'rh-colaboradores': renderColaboradores,
   'rh-admissional': genericListPage({ icon:'fa-file-circle-plus', title:'Documentos Admissionais', area:'rh', module:'admissional', emptyText:'Registre documentos e checklists de admissão.', fields:[
