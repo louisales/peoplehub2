@@ -268,6 +268,38 @@ def init_db():
             created_by TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )""",
+        """CREATE TABLE IF NOT EXISTS disc_assessments (
+            id TEXT PRIMARY KEY,
+            employee_id TEXT NOT NULL,
+            answers TEXT NOT NULL,
+            d_score REAL DEFAULT 0,
+            i_score REAL DEFAULT 0,
+            s_score REAL DEFAULT 0,
+            c_score REAL DEFAULT 0,
+            dominant_profile TEXT DEFAULT '',
+            applied_by TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""",
+        """CREATE TABLE IF NOT EXISTS pdi_assessments (
+            id TEXT PRIMARY KEY,
+            employee_id TEXT NOT NULL,
+            assessor_id TEXT NOT NULL,
+            assessor_type TEXT DEFAULT 'manager',
+            period TEXT DEFAULT '',
+            score_estrategico REAL DEFAULT 0,
+            score_conhecimentos REAL DEFAULT 0,
+            score_habilidades REAL DEFAULT 0,
+            score_atitudes REAL DEFAULT 0,
+            score_treinamentos REAL DEFAULT 0,
+            score_total REAL DEFAULT 0,
+            positives TEXT DEFAULT '',
+            improvements TEXT DEFAULT '',
+            commitments TEXT DEFAULT '',
+            ai_recommendations TEXT DEFAULT '',
+            status TEXT DEFAULT 'draft',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""",
     ]
     for sql in migrations:
         try:
@@ -1011,6 +1043,222 @@ def delete_career_event(emp_id, hist_id):
     conn.commit()
     conn.close()
     return jsonify({'success': True})
+
+# ── DISC ──────────────────────────────────────────────────────────────────────
+@app.route('/api/employees/<emp_id>/disc', methods=['GET'])
+@login_required
+def get_disc(emp_id):
+    conn = get_db()
+    disc = conn.execute("SELECT * FROM disc_assessments WHERE employee_id=? ORDER BY created_at DESC LIMIT 1", (emp_id,)).fetchone()
+    conn.close()
+    return jsonify(dict(disc) if disc else {})
+
+@app.route('/api/employees/<emp_id>/disc', methods=['POST'])
+@require_role(*EDIT_ROLES)
+def save_disc(emp_id):
+    data = request.get_json()
+    answers = data.get('answers', [])
+    d, i, s, c = 0, 0, 0, 0
+    for a in answers:
+        if a == 'D': d += 1
+        elif a == 'I': i += 1
+        elif a == 'S': s += 1
+        elif a == 'C': c += 1
+    total = max(len(answers), 1)
+    scores = {'D': d/total*100, 'I': i/total*100, 'S': s/total*100, 'C': c/total*100}
+    dominant = max(scores, key=scores.get)
+    conn = get_db()
+    disc_id = str(uuid.uuid4())
+    conn.execute("""INSERT INTO disc_assessments (id, employee_id, answers, d_score, i_score, s_score, c_score, dominant_profile, applied_by)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                 (disc_id, emp_id, json.dumps(answers), scores['D'], scores['I'], scores['S'], scores['C'], dominant, session.get('user_id')))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'dominant': dominant, 'scores': scores})
+
+# ── PDI ASSESSMENTS ────────────────────────────────────────────────────────────
+@app.route('/api/employees/<emp_id>/pdi', methods=['GET'])
+@login_required
+def get_pdi(emp_id):
+    role = session.get('user_role', 'colaborador')
+    user_id = session.get('user_id')
+    conn = get_db()
+    if role in ['admin', 'rh', 'gestor']:
+        rows = conn.execute("SELECT * FROM pdi_assessments WHERE employee_id=? ORDER BY created_at DESC", (emp_id,)).fetchall()
+    else:
+        # colaborador vê apenas os próprios registros onde é avaliado
+        rows = conn.execute("SELECT * FROM pdi_assessments WHERE employee_id=? ORDER BY created_at DESC", (emp_id,)).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/employees/<emp_id>/pdi', methods=['POST'])
+@login_required
+def create_pdi(emp_id):
+    data = request.get_json()
+    pdi_id = str(uuid.uuid4())
+    score_total = round((
+        float(data.get('score_estrategico', 0)) +
+        float(data.get('score_conhecimentos', 0)) +
+        float(data.get('score_habilidades', 0)) +
+        float(data.get('score_atitudes', 0)) +
+        float(data.get('score_treinamentos', 0))
+    ) / 5, 2)
+    conn = get_db()
+    conn.execute("""INSERT INTO pdi_assessments (id, employee_id, assessor_id, assessor_type, period,
+                    score_estrategico, score_conhecimentos, score_habilidades, score_atitudes, score_treinamentos,
+                    score_total, positives, improvements, commitments, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                 (pdi_id, emp_id, session.get('user_id'), data.get('assessor_type', 'manager'),
+                  data.get('period', ''),
+                  data.get('score_estrategico', 0), data.get('score_conhecimentos', 0),
+                  data.get('score_habilidades', 0), data.get('score_atitudes', 0),
+                  data.get('score_treinamentos', 0), score_total,
+                  data.get('positives', ''), data.get('improvements', ''),
+                  data.get('commitments', ''), data.get('status', 'draft')))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'id': pdi_id, 'score_total': score_total})
+
+@app.route('/api/employees/<emp_id>/pdi/<pdi_id>', methods=['PUT'])
+@login_required
+def update_pdi(emp_id, pdi_id):
+    data = request.get_json()
+    score_total = round((
+        float(data.get('score_estrategico', 0)) +
+        float(data.get('score_conhecimentos', 0)) +
+        float(data.get('score_habilidades', 0)) +
+        float(data.get('score_atitudes', 0)) +
+        float(data.get('score_treinamentos', 0))
+    ) / 5, 2)
+    conn = get_db()
+    conn.execute("""UPDATE pdi_assessments SET score_estrategico=?, score_conhecimentos=?, score_habilidades=?,
+                    score_atitudes=?, score_treinamentos=?, score_total=?, positives=?, improvements=?,
+                    commitments=?, ai_recommendations=?, status=?, updated_at=CURRENT_TIMESTAMP
+                    WHERE id=? AND employee_id=?""",
+                 (data.get('score_estrategico', 0), data.get('score_conhecimentos', 0),
+                  data.get('score_habilidades', 0), data.get('score_atitudes', 0),
+                  data.get('score_treinamentos', 0), score_total,
+                  data.get('positives', ''), data.get('improvements', ''),
+                  data.get('commitments', ''), data.get('ai_recommendations', ''),
+                  data.get('status', 'draft'), pdi_id, emp_id))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'score_total': score_total})
+
+@app.route('/api/employees/<emp_id>/pdi/<pdi_id>', methods=['DELETE'])
+@require_role('admin')
+def delete_pdi(emp_id, pdi_id):
+    conn = get_db()
+    conn.execute("DELETE FROM pdi_assessments WHERE id=? AND employee_id=?", (pdi_id, emp_id))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/employees/<emp_id>/pdi/ai-recommendations', methods=['POST'])
+@require_role(*EDIT_ROLES)
+def get_ai_recommendations(emp_id):
+    import urllib.request
+    data = request.get_json()
+    conn = get_db()
+    emp = conn.execute("SELECT * FROM employees WHERE id=?", (emp_id,)).fetchone()
+    disc = conn.execute("SELECT * FROM disc_assessments WHERE employee_id=? ORDER BY created_at DESC LIMIT 1", (emp_id,)).fetchone()
+    history = conn.execute("SELECT * FROM career_history WHERE employee_id=? ORDER BY event_date DESC LIMIT 5", (emp_id,)).fetchall()
+    conn.close()
+    if not emp:
+        return jsonify({'error': 'Colaborador não encontrado'}), 404
+
+    emp = dict(emp)
+    disc_info = f"Perfil DISC dominante: {dict(disc)['dominant_profile']} (D:{dict(disc)['d_score']:.0f}% I:{dict(disc)['i_score']:.0f}% S:{dict(disc)['s_score']:.0f}% C:{dict(disc)['c_score']:.0f}%)" if disc else "DISC não aplicado"
+    hist_info = "; ".join([f"{h['event_type']}: {h['previous_position']} → {h['new_position']} ({h['event_date']})" for h in history]) if history else "Sem histórico de movimentações"
+
+    scores = {
+        'Estratégico': float(data.get('score_estrategico', 0)),
+        'Conhecimentos': float(data.get('score_conhecimentos', 0)),
+        'Habilidades': float(data.get('score_habilidades', 0)),
+        'Atitudes': float(data.get('score_atitudes', 0)),
+        'Treinamentos': float(data.get('score_treinamentos', 0)),
+    }
+    score_total = sum(scores.values()) / 5
+    weakest = min(scores, key=scores.get)
+    strongest = max(scores, key=scores.get)
+
+    system_prompt = """Você é o Agente de Desenvolvimento Valore, especialista em gestão de pessoas e desenvolvimento de carreira no contexto de escritórios de contabilidade e consultoria.
+
+SOBRE O GRUPO VALORE:
+- Missão: Transformar negócios e inspirar pessoas para um mundo melhor
+- Visão: Ser a principal referência em soluções estratégicas que inspiram pessoas a transformar negócios em todo o Brasil
+- Valores: Compartilhar e Colaborar | Integridade | Trabalhar e crescer juntos | Fazer a diferença
+- Culture Code: A mudança é nossa única constante; Somos extraordinários no que fazemos; Pessoas em primeiro lugar; Melhoria contínua é o nosso compromisso; Erramos, aprendemos e seguimos em frente; Somos práticos e analíticos; Antecipamos o futuro; Nossa cultura é inegociável
+
+COMPETÊNCIAS UNIVERSAIS VALORE (esperadas de todos):
+Profissionalismo, Domínio Técnico, Qualidade das Entregas, Cumprimento de Prazos, Disponibilidade e Comprometimento, Iniciativa, Trabalho em Equipe, Organização e Planejamento, Respeito às Normas Internas, Adesão a Novas Tecnologias
+
+EXPECTATIVAS POR NÍVEL:
+- Estagiário/Assistente: Aprendizado ativo, postura ética, colaboração, busca por conhecimento, execução orientada
+- Analista Júnior: Autonomia crescente, conhecimento técnico em consolidação, proatividade, orientação a resultados
+- Analista Pleno: Maturidade profissional, visão macro, gestão de tempo, relacionamento com clientes, mentoria de juniores
+- Analista Sênior: Liderança técnica, formação de sucessores, domínio pleno das rotinas, apresentação a clientes, pensamento crítico avançado
+- Supervisor: Gestão de equipe, definição de metas, feedback estruturado, resolução de conflitos, visão estratégica
+- Gerente: Visão estratégica total, desenvolvimento organizacional, representação institucional
+
+POLÍTICA DE MOBILIDADE: Nota mínima 7.0 (escala 10) para progressão. A Valore adota carreira em Y. Avaliação semestral com auto-avaliação (peso 2) e gestor (peso 8).
+
+Seu tom deve ser: técnico, motivacional e formal. Suas recomendações devem ser práticas, específicas para o contexto de contabilidade/consultoria e alinhadas com os valores da Valore."""
+
+    user_message = f"""Gere recomendações de desenvolvimento para o seguinte colaborador:
+
+DADOS DO COLABORADOR:
+- Nome: {emp.get('name')}
+- Cargo: {emp.get('position')}
+- Área: {emp.get('department')}
+- Tempo de empresa: admitido em {emp.get('admission_date', 'não informado')}
+- {disc_info}
+- Histórico de carreira: {hist_info}
+
+RESULTADO DA AVALIAÇÃO PDI (escala 0-5):
+- Estratégico: {scores['Estratégico']:.1f}/5
+- Conhecimentos: {scores['Conhecimentos']:.1f}/5
+- Habilidades: {scores['Habilidades']:.1f}/5
+- Atitudes: {scores['Atitudes']:.1f}/5
+- Treinamentos: {scores['Treinamentos']:.1f}/5
+- Nota geral: {score_total:.2f}/5
+- Dimensão mais forte: {strongest}
+- Dimensão que mais precisa de atenção: {weakest}
+
+Pontos positivos identificados: {data.get('positives', 'não informado')}
+Pontos de melhoria identificados: {data.get('improvements', 'não informado')}
+
+Gere um plano de desenvolvimento estruturado com:
+1. Diagnóstico resumido (2-3 frases)
+2. Recomendações específicas por dimensão que precisam de atenção (máx. 3 dimensões)
+3. Ações práticas para os próximos 90 dias (mínimo 4 ações concretas)
+4. Sugestões de treinamentos e desenvolvimento técnico alinhados ao cargo e à área
+5. Mensagem motivacional final alinhada à cultura Valore
+
+Seja específico para o contexto de contabilidade/consultoria. Use linguagem técnica, motivacional e formal."""
+
+    try:
+        req_data = json.dumps({
+            "model": "claude-sonnet-4-20250514",
+            "max_tokens": 1500,
+            "system": system_prompt,
+            "messages": [{"role": "user", "content": user_message}]
+        }).encode('utf-8')
+        req = urllib.request.Request(
+            'https://api.anthropic.com/v1/messages',
+            data=req_data,
+            headers={
+                'Content-Type': 'application/json',
+                'x-api-key': os.environ.get('ANTHROPIC_API_KEY', ''),
+                'anthropic-version': '2023-06-01'
+            }
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read().decode('utf-8'))
+            text = result['content'][0]['text']
+            return jsonify({'success': True, 'recommendations': text})
+    except Exception as e:
+        return jsonify({'error': f'Erro ao gerar recomendações: {str(e)}'}), 500
 
 # ── SERVE FRONTEND ────────────────────────────────────────────────────────────
 @app.route('/', defaults={'path': ''})
