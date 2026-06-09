@@ -439,10 +439,13 @@ async function loadDiscTab(empId) {
     { label: 'S', value: disc.s_score, color: '#22c55e' },
     { label: 'C', value: disc.c_score, color: '#3b82f6' },
   ];
+  // Guardar dados para exportação
+  window._discDataForExport = { disc, emp: empId, info, scores, p };
+
   container.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
       <div style="width:60px;height:60px;border-radius:50%;background:${info.color};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;flex-shrink:0">${p}</div>
-      <div>
+      <div style="flex:1">
         <div style="font-size:16px;font-weight:700;color:var(--text)">${info.label}</div>
         <div style="font-size:12px;color:var(--text-2);margin-top:2px">${info.desc}</div>
       </div>
@@ -451,15 +454,15 @@ async function loadDiscTab(empId) {
       ${scores.map(s => `
         <div>
           <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
-            <span style="font-weight:600;color:${s.color}">${s.label}</span>
+            <span style="font-weight:600;color:${s.color}">${s.label} — ${['D','Dominância','I','Influência','S','Estabilidade','C','Conformidade'].filter((_,i,a)=>a[i-1]===s.label)[0]||s.label}</span>
             <span style="color:var(--text-2)">${s.value.toFixed(0)}%</span>
           </div>
-          <div style="height:6px;background:var(--border);border-radius:4px">
-            <div style="width:${s.value}%;height:6px;background:${s.color};border-radius:4px"></div>
+          <div style="height:8px;background:var(--border);border-radius:4px">
+            <div style="width:${s.value}%;height:8px;background:${s.color};border-radius:4px"></div>
           </div>
         </div>`).join('')}
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;margin-bottom:12px">
       <div style="background:#f0fdf4;border-radius:8px;padding:10px">
         <div style="font-weight:600;color:#16a34a;margin-bottom:4px">✅ Pontos fortes</div>
         <div style="color:var(--text-2)">${info.strengths}</div>
@@ -469,8 +472,15 @@ async function loadDiscTab(empId) {
         <div style="color:var(--text-2)">${info.development}</div>
       </div>
     </div>
-    <div style="margin-top:12px;font-size:11px;color:var(--text-3);text-align:right">Aplicado em ${fmtDate(disc.created_at)}</div>
-    ${userCan('edit') ? '<button class="btn-secondary" style="margin-top:10px;width:100%;font-size:12px" onclick="openDISC(\''+empId+'\')"><i class="fa-solid fa-redo"></i> Reaplicar DISC</button>' : ''}
+    <div style="background:#eff6ff;border-radius:8px;padding:10px;font-size:12px;margin-bottom:12px">
+      <div style="font-weight:600;color:#1d4ed8;margin-bottom:4px">💼 No contexto da Valore</div>
+      <div style="color:var(--text-2)">${info.valore_context}</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button onclick="exportDiscPDF('${empId}')" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:12px;font-family:var(--font);color:var(--text)"><i class="fa-solid fa-file-pdf" style="color:#ef4444"></i> Exportar PDF</button>
+      ${userCan('edit') ? '<button onclick="openDISC(\''+empId+'\')" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:12px;font-family:var(--font);color:var(--text)"><i class="fa-solid fa-redo"></i> Reaplicar</button>' : ''}
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text-3);text-align:right">Aplicado em ${fmtDate(disc.created_at)}</div>
   `;
 }
 
@@ -2517,4 +2527,324 @@ async function deletePDI360(empId, pdiId) {
   const res = await fetch('/api/employees/' + empId + '/pdi/' + pdiId, { method: 'DELETE', credentials: 'include' });
   const data = await res.json();
   if (data.success) { closeModal(); showToast('Avaliação excluída'); loadPDI360List(empId); }
+}
+
+// ── DISC DESCRIÇÕES COMPLETAS + EXPORTAÇÃO + TELA DE PERFIS ──────────────────
+const DISC_FULL = {
+  D: {
+    label: 'Dominância', color: '#ef4444', emoji: '🔴',
+    desc: 'Orientado a resultados, direto, decidido e competitivo. Age com rapidez, aprecia desafios e toma decisões sem hesitar.',
+    valore_context: 'Na Valore, o perfil D se destaca na liderança de equipes, na condução de fechamentos fiscais críticos e na gestão de demandas urgentes. Sua orientação a resultados impulsiona a entrega, mas precisa equilibrar velocidade com atenção técnica.',
+    strengths: ['Foco intenso em resultados e metas', 'Tomada de decisão ágil sob pressão', 'Liderança natural em situações de crise', 'Determinação para superar obstáculos', 'Capacidade de priorização rápida'],
+    development: ['Desenvolver escuta ativa e empatia com a equipe', 'Maior atenção aos detalhes técnicos e processos', 'Paciência com ritmos diferentes na equipe', 'Comunicação mais colaborativa e menos impositiva', 'Valorizar o processo, não só o resultado final'],
+    roles: 'Supervisor, Analista Sênior, Gestor',
+    motivations: 'Desafios, autonomia, resultados claros e reconhecimento por conquistas',
+    fears: 'Perda de controle, ineficiência, ambiguidade e dependência excessiva',
+    communication: 'Direto e objetivo. Prefere comunicações curtas, focadas no que precisa ser feito.',
+  },
+  I: {
+    label: 'Influência', color: '#f59e0b', emoji: '🟡',
+    desc: 'Comunicativo, entusiasta e persuasivo. Motiva pessoas com facilidade, constrói relacionamentos sólidos e inspira o grupo.',
+    valore_context: 'Na Valore, o perfil I é essencial no atendimento ao cliente, na disseminação da cultura e no engajamento da equipe. Sua capacidade de construir relacionamentos fortalece a experiência do cliente e o ambiente interno, alinhado ao valor de "Compartilhar e Colaborar".',
+    strengths: ['Comunicação expressiva e persuasiva', 'Facilidade em engajar e motivar pessoas', 'Criatividade na resolução de problemas', 'Construção de relacionamentos com clientes', 'Energia positiva que contagia a equipe'],
+    development: ['Aprimorar organização e gestão do tempo', 'Maior foco nos detalhes técnicos e documentação', 'Disciplina na execução de tarefas repetitivas', 'Equilibrar entusiasmo com análise crítica', 'Desenvolver objetividade em relatórios e entregas'],
+    roles: 'Sucesso do Cliente, Comercial, Marketing, Analista Pleno',
+    motivations: 'Reconhecimento social, variedade, colaboração e liberdade criativa',
+    fears: 'Rejeição, isolamento, rotina excessiva e ambientes hostis',
+    communication: 'Expressivo e empático. Responde bem a elogios e ambientes de diálogo aberto.',
+  },
+  S: {
+    label: 'Estabilidade', color: '#22c55e', emoji: '🟢',
+    desc: 'Paciente, confiável e colaborativo. Valoriza harmonia, consistência e é o pilar de sustentação da equipe.',
+    valore_context: 'Na Valore, o perfil S representa a base operacional de qualidade — aquele que entrega com consistência, mantém os processos funcionando e cuida das pessoas ao redor. Alinhado ao valor "Trabalhar e Crescer Juntos", é o guardião da cultura de suporte mútuo.',
+    strengths: ['Consistência e confiabilidade nas entregas', 'Capacidade de suporte e mentoria a colegas', 'Paciência e equilíbrio em situações de pressão', 'Lealdade e comprometimento de longo prazo', 'Habilidade de seguir processos com rigor'],
+    development: ['Desenvolver assertividade e posicionamento', 'Maior adaptabilidade a mudanças e imprevistos', 'Aprender a dizer não quando necessário', 'Sair da zona de conforto para assumir novos desafios', 'Comunicar discordâncias de forma mais proativa'],
+    roles: 'Analista Júnior, Assistente, Analista Pleno, DP',
+    motivations: 'Estabilidade, harmonia no grupo, reconhecimento pela lealdade e ambiente seguro',
+    fears: 'Conflitos, mudanças repentinas, incerteza e pressão excessiva',
+    communication: 'Calmo e receptivo. Prefere conversas tranquilas, com espaço para ouvir e ser ouvido.',
+  },
+  C: {
+    label: 'Conformidade', color: '#3b82f6', emoji: '🔵',
+    desc: 'Analítico, preciso e sistemático. Valoriza qualidade, exatidão e segue normas e processos com rigor técnico.',
+    valore_context: 'Na Valore, o perfil C é o guardião da qualidade técnica — fundamental em setores Contábil, Fiscal e DP, onde precisão na aplicação da legislação e exatidão nos lançamentos são inegociáveis. Alinhado ao Culture Code "Somos extraordinários no que fazemos".',
+    strengths: ['Precisão técnica e atenção aos detalhes', 'Análise crítica aprofundada de processos', 'Rigor no cumprimento de normas e prazos', 'Capacidade de identificar inconsistências', 'Base sólida de conhecimento técnico e legislativo'],
+    development: ['Desenvolver agilidade na tomada de decisão', 'Melhorar comunicação interpessoal e empatia', 'Aprender a agir com informações incompletas', 'Maior tolerância a erros alheios e processos imperfeitos', 'Equilibrar perfeccionismo com produtividade'],
+    roles: 'Analista Contábil, Analista Fiscal, Analista DP, Supervisor',
+    motivations: 'Qualidade, precisão, reconhecimento pela excelência técnica e autonomia para fazer certo',
+    fears: 'Erros, críticas injustas, processos desorganizados e improvisação',
+    communication: 'Formal e baseado em dados. Responde melhor a argumentos técnicos e evidências concretas.',
+  }
+};
+
+// Corrigir DISC_DESC na loadDiscTab para usar DISC_FULL
+async function loadDiscTabV2(empId) {
+  const container = document.getElementById('disc-content-' + empId);
+  if (!container) return;
+  const disc = await api.get('/employees/' + empId + '/disc');
+  if (!disc || !disc.dominant_profile) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:40px;margin-bottom:8px">📊</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-2);margin-bottom:4px">DISC não aplicado</div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:16px">Aplique o questionário para ver o perfil comportamental</div>
+        ${userCan('edit') ? `<button class="btn-primary" onclick="openDISC('${empId}')"><i class="fa-solid fa-clipboard-list"></i> Aplicar DISC</button>` : ''}
+      </div>`;
+    return;
+  }
+  const p = disc.dominant_profile;
+  const info = DISC_FULL[p] || {};
+  const scores = [
+    { label: 'D', full: 'Dominância', value: disc.d_score, color: '#ef4444' },
+    { label: 'I', full: 'Influência', value: disc.i_score, color: '#f59e0b' },
+    { label: 'S', full: 'Estabilidade', value: disc.s_score, color: '#22c55e' },
+    { label: 'C', full: 'Conformidade', value: disc.c_score, color: '#3b82f6' },
+  ];
+  window._discDataForExport = { disc, empId, info, scores, p };
+
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+      <div style="width:60px;height:60px;border-radius:50%;background:${info.color};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;flex-shrink:0">${p}</div>
+      <div style="flex:1">
+        <div style="font-size:16px;font-weight:700;color:var(--text)">${info.emoji} ${info.label}</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:2px">${info.desc}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      ${scores.map(s => `
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+            <span style="font-weight:600;color:${s.color}">${s.label} — ${s.full}</span>
+            <span style="color:var(--text-2)">${s.value.toFixed(0)}%</span>
+          </div>
+          <div style="height:8px;background:var(--border);border-radius:4px">
+            <div style="width:${s.value}%;height:8px;background:${s.color};border-radius:4px"></div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div style="background:#eff6ff;border-radius:8px;padding:10px;font-size:12px;margin-bottom:10px">
+      <div style="font-weight:600;color:#1d4ed8;margin-bottom:4px">💼 No contexto da Valore</div>
+      <div style="color:var(--text-2)">${info.valore_context}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:10px">
+      <div style="background:#f0fdf4;border-radius:8px;padding:10px">
+        <div style="font-weight:600;color:#16a34a;margin-bottom:6px">✅ Pontos fortes</div>
+        ${(info.strengths||[]).map(s => `<div style="color:var(--text-2);margin-bottom:3px">· ${s}</div>`).join('')}
+      </div>
+      <div style="background:#fff7ed;border-radius:8px;padding:10px">
+        <div style="font-weight:600;color:#ea580c;margin-bottom:6px">📈 Desenvolvimento</div>
+        ${(info.development||[]).map(s => `<div style="color:var(--text-2);margin-bottom:3px">· ${s}</div>`).join('')}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:12px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px">
+        <div style="font-weight:600;color:var(--text-2);margin-bottom:3px">🎯 Cargos naturais</div>
+        <div style="color:var(--text-3)">${info.roles}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px">
+        <div style="font-weight:600;color:var(--text-2);margin-bottom:3px">💬 Comunicação</div>
+        <div style="color:var(--text-3)">${info.communication}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="exportDiscPDF('${empId}')" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:12px;font-family:var(--font);color:var(--text)"><i class="fa-solid fa-file-pdf" style="color:#ef4444"></i> Exportar PDF</button>
+      ${userCan('edit') ? `<button onclick="openDISC('${empId}')" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:12px;font-family:var(--font);color:var(--text)"><i class="fa-solid fa-redo"></i> Reaplicar</button>` : ''}
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text-3);text-align:right">Aplicado em ${fmtDate(disc.created_at)}</div>
+  `;
+}
+
+// Sobrescrever loadDiscTab com versão completa
+const _loadDiscTabOriginal = loadDiscTab;
+window.loadDiscTab = loadDiscTabV2;
+
+async function exportDiscPDF(empId) {
+  const d = window._discDataForExport;
+  if (!d) { showToast('Dados não disponíveis', 'error'); return; }
+  const { disc, info, scores, p } = d;
+  // Buscar nome do colaborador
+  const emp = await api.get('/employees/' + empId);
+  const name = emp?.name || 'Colaborador';
+  const dept = emp?.department || '';
+  const position = emp?.position || '';
+  const date = fmtDate(disc.created_at);
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Resultado DISC — ${name}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, sans-serif; color: #1e293b; background: #fff; padding: 40px; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 3px solid ${info.color}; padding-bottom:16px; margin-bottom:24px; }
+  .brand { font-size:22px; font-weight:700; color: #1e293b; letter-spacing:-0.5px; }
+  .brand span { color: ${info.color}; }
+  .subtitle { font-size:12px; color:#64748b; margin-top:4px; }
+  .emp-info h1 { font-size:20px; font-weight:700; }
+  .emp-info p { font-size:13px; color:#64748b; margin-top:2px; }
+  .profile-badge { display:inline-flex; align-items:center; gap:12px; background:${info.color}15; border:2px solid ${info.color}; border-radius:12px; padding:12px 20px; margin:16px 0; }
+  .badge-letter { width:52px; height:52px; border-radius:50%; background:${info.color}; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:#fff; flex-shrink:0; }
+  .badge-text h2 { font-size:18px; font-weight:700; color:${info.color}; }
+  .badge-text p { font-size:12px; color:#475569; margin-top:2px; max-width:480px; line-height:1.5; }
+  .section { margin:20px 0; }
+  .section h3 { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#64748b; margin-bottom:10px; }
+  .bars { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .bar-item label { display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px; font-weight:600; }
+  .bar-track { height:10px; background:#e2e8f0; border-radius:5px; }
+  .bar-fill { height:10px; border-radius:5px; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:12px 0; }
+  .box { border-radius:8px; padding:12px; }
+  .box h4 { font-size:12px; font-weight:700; margin-bottom:6px; }
+  .box ul { list-style:none; }
+  .box ul li { font-size:12px; color:#475569; margin-bottom:3px; }
+  .box ul li::before { content:"· "; }
+  .context-box { background:#eff6ff; border:1.5px solid #93c5fd; border-radius:8px; padding:12px; margin:12px 0; }
+  .context-box h4 { font-size:12px; font-weight:700; color:#1d4ed8; margin-bottom:4px; }
+  .context-box p { font-size:12px; color:#1e40af; line-height:1.6; }
+  .info-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+  .info-card { border:1px solid #e2e8f0; border-radius:8px; padding:10px; }
+  .info-card h4 { font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:4px; }
+  .info-card p { font-size:12px; color:#334155; line-height:1.5; }
+  .footer { margin-top:32px; padding-top:12px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; font-size:11px; color:#94a3b8; }
+  @media print { body { padding:20px; } button { display:none; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <div class="brand">VALORE <span>HUB</span></div>
+    <div class="subtitle">Relatório de Perfil Comportamental — DISC</div>
+  </div>
+  <div class="emp-info" style="text-align:right">
+    <h1>${name}</h1>
+    <p>${position}${dept ? ' · ' + dept : ''}</p>
+    <p style="margin-top:4px;font-size:11px">Avaliação realizada em ${date}</p>
+  </div>
+</div>
+
+<div class="profile-badge">
+  <div class="badge-letter">${p}</div>
+  <div class="badge-text">
+    <h2>${info.emoji} ${info.label}</h2>
+    <p>${info.desc}</p>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Pontuações por dimensão</h3>
+  <div class="bars">
+    ${scores.map(s => `
+    <div class="bar-item">
+      <label><span style="color:${s.color}">${s.label} — ${s.full}</span><span>${s.value.toFixed(0)}%</span></label>
+      <div class="bar-track"><div class="bar-fill" style="width:${s.value}%;background:${s.color}"></div></div>
+    </div>`).join('')}
+  </div>
+</div>
+
+<div class="context-box">
+  <h4>💼 No contexto do Grupo Valore</h4>
+  <p>${info.valore_context}</p>
+</div>
+
+<div class="two-col">
+  <div class="box" style="background:#f0fdf4;border:1.5px solid #86efac">
+    <h4 style="color:#16a34a">✅ Pontos fortes</h4>
+    <ul>${(info.strengths||[]).map(s => `<li>${s}</li>`).join('')}</ul>
+  </div>
+  <div class="box" style="background:#fff7ed;border:1.5px solid #fdba74">
+    <h4 style="color:#ea580c">📈 Pontos de desenvolvimento</h4>
+    <ul>${(info.development||[]).map(s => `<li>${s}</li>`).join('')}</ul>
+  </div>
+</div>
+
+<div class="info-row">
+  <div class="info-card">
+    <h4>🎯 Cargos naturais</h4>
+    <p>${info.roles}</p>
+  </div>
+  <div class="info-card">
+    <h4>💬 Estilo de comunicação</h4>
+    <p>${info.communication}</p>
+  </div>
+  <div class="info-card">
+    <h4>⚡ O que motiva</h4>
+    <p>${info.motivations}</p>
+  </div>
+  <div class="info-card">
+    <h4>⚠️ O que gera desconforto</h4>
+    <p>${info.fears}</p>
+  </div>
+</div>
+
+<div class="footer">
+  <span>Valore Hub — Sistema de Gestão de Pessoas</span>
+  <span>${new Date().toLocaleDateString('pt-BR')}</span>
+</div>
+<br>
+<button onclick="window.print()" style="padding:10px 24px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-family:Arial">🖨️ Imprimir / Salvar como PDF</button>
+</body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  if (win) win.focus();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+// ── TELA DE PERFIS DISC ───────────────────────────────────────────────────────
+async function renderDISCPerfis() {
+  const profiles = ['D','I','S','C'];
+  const cards = profiles.map(p => {
+    const info = DISC_FULL[p];
+    return `
+    <div class="card" style="padding:20px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+        <div style="width:56px;height:56px;border-radius:50%;background:${info.color};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;flex-shrink:0">${p}</div>
+        <div>
+          <div style="font-size:16px;font-weight:700">${info.emoji} ${info.label}</div>
+          <div style="font-size:12px;color:var(--text-3);margin-top:2px">Perfil ${p}</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--text-2);margin-bottom:12px;line-height:1.6">${info.desc}</div>
+      <div style="background:#eff6ff;border-radius:8px;padding:10px;font-size:12px;margin-bottom:10px">
+        <div style="font-weight:600;color:#1d4ed8;margin-bottom:4px">💼 Na Valore</div>
+        <div style="color:#1e40af;line-height:1.5">${info.valore_context}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:10px">
+        <div style="background:#f0fdf4;border-radius:8px;padding:8px">
+          <div style="font-weight:600;color:#16a34a;margin-bottom:4px">✅ Forças</div>
+          ${info.strengths.slice(0,3).map(s => `<div style="color:var(--text-2);margin-bottom:2px">· ${s}</div>`).join('')}
+        </div>
+        <div style="background:#fff7ed;border-radius:8px;padding:8px">
+          <div style="font-weight:600;color:#ea580c;margin-bottom:4px">📈 Desenvolver</div>
+          ${info.development.slice(0,3).map(s => `<div style="color:var(--text-2);margin-bottom:2px">· ${s}</div>`).join('')}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11.5px">
+        <div style="border:1px solid var(--border);border-radius:6px;padding:7px">
+          <div style="font-weight:600;color:var(--text-2);margin-bottom:2px">🎯 Cargos naturais</div>
+          <div style="color:var(--text-3)">${info.roles}</div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:6px;padding:7px">
+          <div style="font-weight:600;color:var(--text-2);margin-bottom:2px">⚡ Motivado por</div>
+          <div style="color:var(--text-3)">${info.motivations.split(',')[0]}...</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+<div class="page-header">
+  <div class="page-title"><i class="fa-solid fa-brain"></i>Perfis DISC</div>
+</div>
+<div class="page-body">
+  <div style="background:linear-gradient(135deg,#1e40af,#1d4ed8);border-radius:var(--radius);padding:20px;color:#fff;margin-bottom:24px">
+    <div style="font-size:16px;font-weight:700;margin-bottom:6px">Metodologia DISC na Valore</div>
+    <div style="font-size:13px;opacity:.9;line-height:1.6">O DISC é uma ferramenta de análise comportamental que identifica 4 perfis dominantes. Na Valore, usamos o DISC para potencializar o desenvolvimento individual, melhorar a comunicação entre equipes e alinhar cada colaborador ao perfil mais adequado para sua função.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    ${cards}
+  </div>
+</div>`;
 }
