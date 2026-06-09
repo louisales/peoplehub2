@@ -370,6 +370,7 @@ async function openEmployeeDetail(id) {
     <div style="display:flex;gap:8px;border-bottom:2px solid var(--border);margin-bottom:16px">
       <button onclick="showEmpTab('info')" id="tab-info" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px">Informações</button>
       <button onclick="showEmpTab('history')" id="tab-history" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-2)">Histórico de Carreira</button>
+      <button onclick="showEmpTab('disc')" id="tab-disc" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-2)">DISC</button>
     </div>
     <div id="emp-tab-info">
       <div class="detail-grid">
@@ -388,6 +389,9 @@ async function openEmployeeDetail(id) {
       <div style="max-height:280px;overflow-y:auto">${historyHtml}</div>
       <button class="btn-secondary" style="margin-top:12px;width:100%" onclick="openAddCareerEvent('${e.id}')"><i class="fa-solid fa-plus"></i> Registrar Movimentação</button>
     </div>
+    <div id="emp-tab-disc" style="display:none">
+      <div id="disc-content-${e.id}">Carregando...</div>
+    </div>
     <div class="modal-footer">
       ${userCan("edit") ? `<button class="btn-secondary" onclick="openEditEmployee('${e.id}')"><i class="fa-solid fa-pen"></i> Editar</button>` : ""}
       ${userCan("admin") ? `<button class="btn-danger" onclick="confirmDeactivate('${e.id}')"><i class="fa-solid fa-user-minus"></i> Inativar</button>` : ""}
@@ -395,15 +399,79 @@ async function openEmployeeDetail(id) {
   `, 'lg');
 }
 
-function showEmpTab(tab) {
-  document.getElementById('emp-tab-info').style.display = tab === 'info' ? '' : 'none';
-  document.getElementById('emp-tab-history').style.display = tab === 'history' ? '' : 'none';
-  document.getElementById('tab-info').style.cssText = tab === 'info'
-    ? 'padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px'
-    : 'padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-2)';
-  document.getElementById('tab-history').style.cssText = tab === 'history'
-    ? 'padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px'
-    : 'padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-2)';
+function showEmpTab(tab, empId) {
+  ['info','history','disc'].forEach(t => {
+    const el = document.getElementById('emp-tab-' + t);
+    if (el) el.style.display = t === tab ? '' : 'none';
+    const btn = document.getElementById('tab-' + t);
+    if (btn) btn.style.cssText = t === tab
+      ? 'padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px'
+      : 'padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-2)';
+  });
+  if (tab === 'disc' && empId) loadDiscTab(empId);
+}
+
+async function loadDiscTab(empId) {
+  const container = document.getElementById('disc-content-' + empId);
+  if (!container) return;
+  const disc = await api.get('/employees/' + empId + '/disc');
+  if (!disc || !disc.dominant_profile) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:40px;margin-bottom:8px">📊</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-2);margin-bottom:4px">DISC não aplicado</div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:16px">Aplique o questionário para ver o perfil comportamental</div>
+        ${userCan('edit') ? '<button class="btn-primary" onclick="openDISC(\''+empId+'\')"><i class="fa-solid fa-clipboard-list"></i> Aplicar DISC</button>' : ''}
+      </div>`;
+    return;
+  }
+  const DISC_DESC = {
+    D: { label: 'Dominância', color: '#ef4444', desc: 'Orientado a resultados, direto, decidido e competitivo. Aprecia desafios e age com rapidez para alcançar metas.', strengths: 'Foco em resultados, tomada de decisão ágil, determinação', development: 'Desenvolver escuta ativa, paciência e atenção ao impacto sobre a equipe' },
+    I: { label: 'Influência', color: '#f59e0b', desc: 'Comunicativo, entusiasta e persuasivo. Motiva pessoas e constrói relacionamentos com facilidade.', strengths: 'Comunicação, engajamento da equipe, criatividade', development: 'Aprimorar organização, foco nos detalhes e disciplina na execução' },
+    S: { label: 'Estabilidade', color: '#22c55e', desc: 'Paciente, confiável e colaborativo. Valoriza harmonia, consistência e trabalho em equipe.', strengths: 'Confiabilidade, suporte à equipe, consistência nas entregas', development: 'Desenvolver assertividade, adaptação a mudanças e posicionamento' },
+    C: { label: 'Conformidade', color: '#3b82f6', desc: 'Analítico, preciso e sistemático. Valoriza qualidade, exatidão e segue processos com rigor.', strengths: 'Precisão técnica, análise crítica, atenção aos detalhes', development: 'Desenvolver agilidade na decisão, comunicação interpessoal e tolerância à ambiguidade' }
+  };
+  const p = disc.dominant_profile;
+  const info = DISC_DESC[p] || {};
+  const scores = [
+    { label: 'D', value: disc.d_score, color: '#ef4444' },
+    { label: 'I', value: disc.i_score, color: '#f59e0b' },
+    { label: 'S', value: disc.s_score, color: '#22c55e' },
+    { label: 'C', value: disc.c_score, color: '#3b82f6' },
+  ];
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+      <div style="width:60px;height:60px;border-radius:50%;background:${info.color};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;flex-shrink:0">${p}</div>
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--text)">${info.label}</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:2px">${info.desc}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      ${scores.map(s => `
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+            <span style="font-weight:600;color:${s.color}">${s.label}</span>
+            <span style="color:var(--text-2)">${s.value.toFixed(0)}%</span>
+          </div>
+          <div style="height:6px;background:var(--border);border-radius:4px">
+            <div style="width:${s.value}%;height:6px;background:${s.color};border-radius:4px"></div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+      <div style="background:#f0fdf4;border-radius:8px;padding:10px">
+        <div style="font-weight:600;color:#16a34a;margin-bottom:4px">✅ Pontos fortes</div>
+        <div style="color:var(--text-2)">${info.strengths}</div>
+      </div>
+      <div style="background:#fff7ed;border-radius:8px;padding:10px">
+        <div style="font-weight:600;color:#ea580c;margin-bottom:4px">📈 Desenvolvimento</div>
+        <div style="color:var(--text-2)">${info.development}</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--text-3);text-align:right">Aplicado em ${fmtDate(disc.created_at)}</div>
+    ${userCan('edit') ? '<button class="btn-secondary" style="margin-top:10px;width:100%;font-size:12px" onclick="openDISC(\''+empId+'\')"><i class="fa-solid fa-redo"></i> Reaplicar DISC</button>' : ''}
+  `;
 }
 
 function openAddCareerEvent(empId) {
@@ -2119,4 +2187,334 @@ async function submitFormTemplate(title, n) {
   };
   const res = await api.post('/records', body);
   if (res) { closeModal(); showToast('Solicitação enviada!'); navigate('ops-formularios'); }
+}
+
+// ── DISC QUESTIONÁRIO ─────────────────────────────────────────────────────────
+const DISC_QUESTIONS = [
+  { q: "Ao receber uma nova demanda urgente do cliente, você tende a:", D: "Agir imediatamente com foco em resolver rápido", I: "Mobilizar a equipe com entusiasmo para resolver juntos", S: "Seguir o procedimento estabelecido com calma e cuidado", C: "Analisar todos os detalhes antes de tomar qualquer ação" },
+  { q: "Em uma reunião de equipe com divergências, você costuma:", D: "Defender sua posição com firmeza e buscar uma decisão rápida", I: "Tentar convencer os outros com argumentos e entusiasmo", S: "Ouvir a todos e buscar um consenso que preserve o grupo", C: "Analisar os dados apresentados e apontar inconsistências" },
+  { q: "Diante de um erro em um lançamento contábil crítico, você:", D: "Resolve imediatamente e garante que não impacte o cliente", I: "Comunica abertamente à equipe e busca ajuda coletiva", S: "Segue o protocolo, notifica o responsável e age com calma", C: "Investiga a causa raiz de forma minuciosa antes de corrigir" },
+  { q: "Sua principal motivação no trabalho é:", D: "Atingir metas e ser reconhecido pelos resultados", I: "Construir relações e influenciar positivamente as pessoas", S: "Contribuir de forma consistente e manter a harmonia do time", C: "Fazer o trabalho com qualidade e exatidão técnica" },
+  { q: "Como você lida com prazos apertados de obrigações acessórias?", D: "Assume o controle e garante a entrega a qualquer custo", I: "Motiva a equipe e cria um clima de superação coletiva", S: "Segue o planejamento com disciplina e antecipa os riscos", C: "Verifica cada etapa para garantir que nada saia errado" },
+  { q: "Quando precisa explicar algo técnico a um cliente sem conhecimento contábil:", D: "Vai direto ao ponto, focando no impacto para o negócio", I: "Usa exemplos práticos e mantém a conversa descontraída", S: "Explica com paciência, no ritmo do cliente, sem pressão", C: "Detalha cada ponto com precisão, garantindo que entenda" },
+  { q: "Ao aprender um novo sistema ou tecnologia, você:", D: "Aprende o essencial rapidamente para já usar e evoluir", I: "Compartilha o aprendizado com a equipe animadamente", S: "Segue o treinamento passo a passo e pratica com calma", C: "Estuda a fundo a documentação antes de começar a usar" },
+  { q: "Em projetos em grupo, seu papel natural é:", D: "Liderar e direcionar para que o objetivo seja alcançado", I: "Engajar as pessoas e manter o clima positivo do grupo", S: "Executar com consistência e apoiar quem precisa de ajuda", C: "Garantir a qualidade técnica e a precisão das entregas" },
+  { q: "Como você reage quando recebe um feedback crítico?", D: "Aceita, mas já pensa em como agir para superar a crítica", I: "Discute abertamente e busca entender o ponto de vista", S: "Escuta com atenção e reflete antes de responder", C: "Analisa se o feedback tem base nos fatos e dados" },
+  { q: "Ao identificar uma oportunidade de melhoria nos processos:", D: "Propõe e implementa rapidamente, sem esperar aprovação", I: "Apresenta a ideia com entusiasmo para engajar a equipe", S: "Sugere com cautela, considerando o impacto em todos", C: "Elabora um estudo detalhado antes de propor qualquer mudança" },
+  { q: "Diante de uma mudança inesperada nos procedimentos internos, você:", D: "Se adapta rapidamente e foca no que precisa ser feito", I: "Vê como uma oportunidade e motiva o time a abraçar a mudança", S: "Prefere entender bem a mudança antes de aplicar", C: "Questiona se a mudança foi bem planejada e documentada" },
+  { q: "Sua forma de se comunicar com a equipe é geralmente:", D: "Direta e objetiva, sem rodeios", I: "Animada, expressiva e aberta ao diálogo", S: "Tranquila, empática e sempre disponível para ouvir", C: "Precisa, estruturada e baseada em fatos" },
+  { q: "Quando o cliente está insatisfeito com uma entrega:", D: "Age de imediato para resolver e recuperar a confiança", I: "Coloca empatia na conversa e reconquista o cliente", S: "Ouve com calma, pede desculpas e oferece uma solução segura", C: "Analisa o que saiu errado e apresenta uma solução embasada" },
+  { q: "Sua maior dificuldade no ambiente de trabalho costuma ser:", D: "Lidar com a lentidão e indecisão das pessoas ao redor", I: "Manter o foco em tarefas repetitivas e de longa duração", S: "Lidar com mudanças frequentes e ambientes instáveis", C: "Trabalhar com prazos curtos que impedem a análise detalhada" },
+  { q: "O que mais te satisfaz em uma entrega bem-feita?", D: "Ter alcançado o resultado dentro do prazo e com impacto", I: "O reconhecimento do cliente e da equipe pelo trabalho", S: "A segurança de que tudo foi feito com cuidado e responsabilidade", C: "A certeza de que cada detalhe foi verificado e está correto" },
+  { q: "Como você costuma tomar decisões importantes?", D: "Rapidamente, com base na experiência e no instinto", I: "Conversando com pessoas e levando em conta as relações", S: "Com cautela, considerando o impacto em todos os envolvidos", C: "Com base em dados, análises e evidências concretas" },
+  { q: "Em momentos de alta pressão (como fechamento fiscal), você:", D: "Assume o comando e garante que a equipe entregue", I: "Mantém o clima positivo e incentiva todos a persistirem", S: "Mantém a calma e trabalha de forma constante até o fim", C: "Reddobra a atenção nos detalhes para não cometer erros" },
+  { q: "Qual das seguintes frases mais representa você?", D: "Resultados falam mais alto que palavras", I: "A energia do time é o nosso maior ativo", S: "Consistência e confiança constroem o sucesso", C: "A qualidade não admite atalhos" },
+  { q: "Como você prefere receber instruções em um novo projeto?", D: "Objetivo claro e autonomia para executar como achar melhor", I: "Reunião de alinhamento com troca de ideias e brainstorming", S: "Explicação detalhada do processo e suporte ao longo do caminho", C: "Documentação completa com especificações e critérios de qualidade" },
+  { q: "O que você mais valoriza em um líder?", D: "Clareza nos objetivos e reconhecimento por resultados", I: "Carisma, abertura ao diálogo e capacidade de inspirar", S: "Estabilidade, justiça e suporte constante à equipe", C: "Competência técnica, rigor e decisões baseadas em dados" },
+];
+
+let _discAnswers = [];
+let _discEmpId = '';
+
+function openDISC(empId) {
+  _discAnswers = new Array(DISC_QUESTIONS.length).fill(null);
+  _discEmpId = empId;
+  renderDISCQuestion(0);
+}
+
+function renderDISCQuestion(idx) {
+  const q = DISC_QUESTIONS[idx];
+  const total = DISC_QUESTIONS.length;
+  const answered = _discAnswers.filter(a => a !== null).length;
+  const pct = Math.round((answered / total) * 100);
+  const opts = ['D','I','S','C'].map(key => `
+    <button onclick="selectDISCAnswer(${idx},'${key}')" style="
+      display:block;width:100%;text-align:left;padding:12px 16px;margin-bottom:8px;
+      border:2px solid ${_discAnswers[idx]===key?'var(--primary)':'var(--border)'};
+      background:${_discAnswers[idx]===key?'var(--primary-light)':'var(--surface)'};
+      border-radius:var(--radius);cursor:pointer;font-size:13px;font-family:var(--font);
+      color:${_discAnswers[idx]===key?'var(--primary)':'var(--text)'}">
+      ${q[key]}
+    </button>`).join('');
+
+  openModal(`DISC — Questão ${idx+1} de ${total}`, `
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-3);margin-bottom:4px">
+        <span>Progresso</span><span>${answered}/${total} respondidas</span>
+      </div>
+      <div style="height:6px;background:var(--border);border-radius:4px">
+        <div style="width:${pct}%;height:6px;background:var(--primary);border-radius:4px;transition:width .3s"></div>
+      </div>
+    </div>
+    <div style="font-size:14px;font-weight:600;margin-bottom:16px;line-height:1.5">${q.q}</div>
+    ${opts}
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn-secondary" onclick="${idx > 0 ? 'renderDISCQuestion('+(idx-1)+')' : 'closeModal()'}">${idx > 0 ? '← Anterior' : 'Cancelar'}</button>
+      <button class="btn-primary" onclick="${idx < total-1 ? 'renderDISCQuestion('+(idx+1)+')' : 'submitDISC()'}" ${_discAnswers[idx]===null?'disabled':''}>
+        ${idx < total-1 ? 'Próxima →' : 'Finalizar e Ver Resultado'}
+      </button>
+    </div>
+  `);
+}
+
+function selectDISCAnswer(idx, answer) {
+  _discAnswers[idx] = answer;
+  renderDISCQuestion(idx);
+}
+
+async function submitDISC() {
+  if (_discAnswers.some(a => a === null)) {
+    showToast('Responda todas as questões antes de finalizar', 'error');
+    return;
+  }
+  const res = await api.post('/employees/' + _discEmpId + '/disc', { answers: _discAnswers });
+  if (res?.success) {
+    closeModal();
+    showToast('DISC aplicado com sucesso!');
+    openEmployeeDetail(_discEmpId);
+    setTimeout(() => showEmpTab('disc', _discEmpId), 300);
+  } else {
+    showToast('Erro ao salvar resultado', 'error');
+  }
+}
+
+// ── PDI 360° COM IA ───────────────────────────────────────────────────────────
+let _pdiEmpId = '';
+let _pdiCurrentId = null;
+
+async function renderPDI360() {
+  const employees = (await api.get('/employees') || []).filter(e => e.status === 'active');
+  window._pdi360Employees = employees;
+
+  return `
+<div class="page-header">
+  <div class="page-title"><i class="fa-solid fa-chart-radar"></i>PDI — Avaliação 360°</div>
+  ${userCan('edit') ? '<div class="page-actions"><button class="btn-primary" onclick="openNewPDI360()"><i class="fa-solid fa-plus"></i> Nova Avaliação</button></div>' : ''}
+</div>
+<div class="page-body">
+  <div class="form-group" style="max-width:360px">
+    <label>Selecione o colaborador</label>
+    <select id="pdi360-emp-sel" onchange="loadPDI360List(this.value)" style="padding:9px 14px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13.5px;font-family:var(--font);color:var(--text);background:var(--surface);outline:none;width:100%">
+      <option value="">Selecione...</option>
+      ${employees.map(e => `<option value="${e.id}">${e.name} — ${e.department||''}</option>`).join('')}
+    </select>
+  </div>
+  <div id="pdi360-list"></div>
+</div>`;
+}
+
+async function loadPDI360List(empId) {
+  if (!empId) return;
+  _pdiEmpId = empId;
+  const assessments = await api.get('/employees/' + empId + '/pdi') || [];
+  const emp = (window._pdi360Employees||[]).find(e => e.id === empId);
+  const container = document.getElementById('pdi360-list');
+  if (!container) return;
+
+  if (assessments.length === 0) {
+    container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-chart-radar"></i><h3>Nenhuma avaliação</h3><p>Crie a primeira avaliação PDI para ${emp?.name||'este colaborador'}.</p></div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="margin-top:20px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-2)">${emp?.name||''} · ${assessments.length} avaliação(ões)</div>
+      <div style="display:grid;gap:12px">
+        ${assessments.map(a => {
+          const typeLabel = a.assessor_type === 'self' ? '🪞 Autoavaliação' : '👤 Gestor';
+          const scoreColor = a.score_total >= 4 ? '#22c55e' : a.score_total >= 3 ? '#f59e0b' : '#ef4444';
+          return `<div class="card" style="padding:16px;cursor:pointer" onclick="openViewPDI360('${empId}','${a.id}')">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div>
+                <div style="font-size:13.5px;font-weight:600">${typeLabel} · ${a.period||'Sem período'}</div>
+                <div style="font-size:12px;color:var(--text-3)">${fmtDate(a.created_at)}</div>
+              </div>
+              <div style="text-align:center">
+                <div style="font-size:24px;font-weight:700;color:${scoreColor}">${parseFloat(a.score_total).toFixed(1)}</div>
+                <div style="font-size:10px;color:var(--text-3)">/ 5.0</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
+              ${[['Estratégico',a.score_estrategico],['Conhecimentos',a.score_conhecimentos],['Habilidades',a.score_habilidades],['Atitudes',a.score_atitudes],['Treinamentos',a.score_treinamentos]].map(([label,val]) => `
+                <div style="text-align:center">
+                  <div style="font-size:11px;color:var(--text-3);margin-bottom:2px">${label.slice(0,5)}.</div>
+                  <div style="font-size:13px;font-weight:600;color:var(--primary)">${parseFloat(val||0).toFixed(1)}</div>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+function openNewPDI360() {
+  const employees = window._pdi360Employees || [];
+  const empOpts = employees.map(e => `<option value="${e.id}" ${e.id===_pdiEmpId?'selected':''}>${e.name} — ${e.department||''}</option>`).join('');
+  openModal('Nova Avaliação PDI 360°', `
+    <div class="form-row">
+      <div class="form-group"><label>Colaborador *</label>
+        <select id="pdi-emp">${empOpts}</select>
+      </div>
+      <div class="form-group"><label>Tipo de avaliação</label>
+        <select id="pdi-type">
+          <option value="manager">👤 Gestor avalia colaborador</option>
+          <option value="self">🪞 Autoavaliação</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Período de referência</label>
+      <input type="text" id="pdi-period" placeholder="Ex: 1º Semestre 2026"></div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:12px">Pontuações (escala 0 a 5)</div>
+      ${[['estrategico','Estratégico','Visão de negócio, alinhamento com missão/valores, orientação a resultados'],
+         ['conhecimentos','Conhecimentos','Domínio técnico da área, legislação, sistemas e atualização profissional'],
+         ['habilidades','Habilidades','Comunicação, organização, relacionamento interpessoal e liderança'],
+         ['atitudes','Atitudes','Proatividade, ética, comprometimento, trabalho em equipe e iniciativa'],
+         ['treinamentos','Treinamentos','Participação em cursos, aplicação do aprendizado e busca por desenvolvimento']
+        ].map(([id,label,desc]) => `
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <label style="font-size:13px;font-weight:600">${label}</label>
+            <span id="pdi-${id}-val" style="font-size:13px;font-weight:700;color:var(--primary)">0.0</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-3);margin-bottom:5px">${desc}</div>
+          <input type="range" id="pdi-${id}" min="0" max="5" step="0.5" value="0"
+            oninput="document.getElementById('pdi-${id}-val').textContent=parseFloat(this.value).toFixed(1)"
+            style="width:100%;accent-color:var(--primary)">
+        </div>`).join('')}
+    </div>
+    <div class="form-group"><label>Pontos positivos do desempenho</label>
+      <textarea id="pdi-positives" placeholder="Descreva os principais pontos fortes..."></textarea></div>
+    <div class="form-group"><label>O que aperfeiçoar</label>
+      <textarea id="pdi-improvements" placeholder="Áreas de desenvolvimento identificadas..."></textarea></div>
+    <div class="form-group"><label>Compromissos de aperfeiçoamento</label>
+      <textarea id="pdi-commitments" placeholder="Ações acordadas para o próximo ciclo..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="savePDI360()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  `);
+}
+
+async function savePDI360() {
+  const empId = document.getElementById('pdi-emp')?.value;
+  if (!empId) { showToast('Selecione o colaborador', 'error'); return; }
+  const body = {
+    assessor_type: document.getElementById('pdi-type')?.value || 'manager',
+    period: document.getElementById('pdi-period')?.value || '',
+    score_estrategico: parseFloat(document.getElementById('pdi-estrategico')?.value || 0),
+    score_conhecimentos: parseFloat(document.getElementById('pdi-conhecimentos')?.value || 0),
+    score_habilidades: parseFloat(document.getElementById('pdi-habilidades')?.value || 0),
+    score_atitudes: parseFloat(document.getElementById('pdi-atitudes')?.value || 0),
+    score_treinamentos: parseFloat(document.getElementById('pdi-treinamentos')?.value || 0),
+    positives: document.getElementById('pdi-positives')?.value || '',
+    improvements: document.getElementById('pdi-improvements')?.value || '',
+    commitments: document.getElementById('pdi-commitments')?.value || '',
+    status: 'completed',
+  };
+  const res = await api.post('/employees/' + empId + '/pdi', body);
+  if (res?.success) {
+    closeModal();
+    showToast('Avaliação salva!');
+    _pdiEmpId = empId;
+    const sel = document.getElementById('pdi360-emp-sel');
+    if (sel) { sel.value = empId; }
+    await loadPDI360List(empId);
+  } else {
+    showToast('Erro ao salvar', 'error');
+  }
+}
+
+async function openViewPDI360(empId, pdiId) {
+  const assessments = await api.get('/employees/' + empId + '/pdi') || [];
+  const a = assessments.find(x => x.id === pdiId);
+  if (!a) return;
+  const emp = (window._pdi360Employees||[]).find(e => e.id === empId);
+  const typeLabel = a.assessor_type === 'self' ? '🪞 Autoavaliação' : '👤 Avaliação do Gestor';
+  const scoreColor = a.score_total >= 4 ? '#22c55e' : a.score_total >= 3 ? '#f59e0b' : '#ef4444';
+  const dims = [
+    ['Estratégico', a.score_estrategico, '#3b82f6'],
+    ['Conhecimentos', a.score_conhecimentos, '#8b5cf6'],
+    ['Habilidades', a.score_habilidades, '#22c55e'],
+    ['Atitudes', a.score_atitudes, '#f59e0b'],
+    ['Treinamentos', a.score_treinamentos, '#06b6d4'],
+  ];
+  const radarBars = dims.map(([label, val, color]) => `
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+        <span style="font-weight:500">${label}</span>
+        <span style="font-weight:700;color:${color}">${parseFloat(val||0).toFixed(1)}</span>
+      </div>
+      <div style="height:8px;background:var(--border);border-radius:4px">
+        <div style="width:${parseFloat(val||0)/5*100}%;height:8px;background:${color};border-radius:4px"></div>
+      </div>
+    </div>`).join('');
+
+  openModal(`PDI — ${emp?.name||''}`, `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div style="font-size:13px;color:var(--text-2)">${typeLabel} · ${a.period||'Sem período'}</div>
+        <div style="font-size:11px;color:var(--text-3)">${fmtDate(a.created_at)}</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:32px;font-weight:700;color:${scoreColor}">${parseFloat(a.score_total).toFixed(1)}</div>
+        <div style="font-size:11px;color:var(--text-3)">nota geral / 5.0</div>
+      </div>
+    </div>
+    ${radarBars}
+    ${a.positives ? `<div style="margin-top:12px;background:#f0fdf4;border-radius:8px;padding:10px"><div style="font-size:12px;font-weight:600;color:#16a34a;margin-bottom:4px">✅ Pontos Positivos</div><div style="font-size:12px;color:var(--text-2)">${a.positives}</div></div>` : ''}
+    ${a.improvements ? `<div style="margin-top:8px;background:#fff7ed;border-radius:8px;padding:10px"><div style="font-size:12px;font-weight:600;color:#ea580c;margin-bottom:4px">📈 O que Aperfeiçoar</div><div style="font-size:12px;color:var(--text-2)">${a.improvements}</div></div>` : ''}
+    ${a.commitments ? `<div style="margin-top:8px;background:#eff6ff;border-radius:8px;padding:10px"><div style="font-size:12px;font-weight:600;color:#2563eb;margin-bottom:4px">🎯 Compromissos</div><div style="font-size:12px;color:var(--text-2)">${a.commitments}</div></div>` : ''}
+    ${a.ai_recommendations ? `<div style="margin-top:8px;background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1.5px solid #7dd3fc;border-radius:8px;padding:12px"><div style="font-size:12px;font-weight:600;color:#0369a1;margin-bottom:6px">🤖 Recomendações do Agente Valore</div><div style="font-size:12px;color:var(--text-2);white-space:pre-wrap;line-height:1.6">${a.ai_recommendations}</div></div>` : ''}
+    <div class="modal-footer" style="justify-content:space-between">
+      ${userCan('admin') ? `<button class="btn-danger" onclick="deletePDI360('${empId}','${pdiId}')"><i class="fa-solid fa-trash"></i></button>` : '<div></div>'}
+      ${userCan('edit') ? `<button class="btn-primary" onclick="generateAI360('${empId}','${pdiId}')" id="btn-ai-360"><i class="fa-solid fa-robot"></i> Gerar Recomendações IA</button>` : ''}
+    </div>
+  `, 'lg');
+}
+
+async function generateAI360(empId, pdiId) {
+  const btn = document.getElementById('btn-ai-360');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando...'; }
+  const assessments = await api.get('/employees/' + empId + '/pdi') || [];
+  const a = assessments.find(x => x.id === pdiId);
+  if (!a) return;
+  const body = {
+    score_estrategico: a.score_estrategico,
+    score_conhecimentos: a.score_conhecimentos,
+    score_habilidades: a.score_habilidades,
+    score_atitudes: a.score_atitudes,
+    score_treinamentos: a.score_treinamentos,
+    positives: a.positives,
+    improvements: a.improvements,
+  };
+  try {
+    const res = await fetch('/api/employees/' + empId + '/pdi/ai-recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.success) {
+      await api.put('/employees/' + empId + '/pdi/' + pdiId, { ...a, ai_recommendations: data.recommendations });
+      showToast('Recomendações geradas!');
+      closeModal();
+      await loadPDI360List(empId);
+      setTimeout(() => openViewPDI360(empId, pdiId), 300);
+    } else {
+      showToast(data.error || 'Erro ao gerar recomendações', 'error');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-robot"></i> Gerar Recomendações IA'; }
+    }
+  } catch(e) {
+    showToast('Erro de conexão com a IA', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-robot"></i> Gerar Recomendações IA'; }
+  }
+}
+
+async function deletePDI360(empId, pdiId) {
+  if (!confirm('Excluir esta avaliação?')) return;
+  const res = await fetch('/api/employees/' + empId + '/pdi/' + pdiId, { method: 'DELETE', credentials: 'include' });
+  const data = await res.json();
+  if (data.success) { closeModal(); showToast('Avaliação excluída'); loadPDI360List(empId); }
 }
