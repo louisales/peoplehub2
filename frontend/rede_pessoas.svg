@@ -1,0 +1,147 @@
+<svg width="100%" viewBox="0 0 340 340" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Rede de pessoas conectadas</title>
+<desc>Ilustração animada de pessoas conectadas em rede</desc>
+<defs>
+  <radialGradient id="glow1" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"/>
+    <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="ball" cx="35%" cy="30%" r="65%">
+    <stop offset="0%" stop-color="#60a5fa"/>
+    <stop offset="60%" stop-color="#2563eb"/>
+    <stop offset="100%" stop-color="#1d4ed8"/>
+  </radialGradient>
+  <radialGradient id="ball2" cx="35%" cy="30%" r="65%">
+    <stop offset="0%" stop-color="#93c5fd"/>
+    <stop offset="60%" stop-color="#3b82f6"/>
+    <stop offset="100%" stop-color="#2563eb"/>
+  </radialGradient>
+  <radialGradient id="ball3" cx="35%" cy="30%" r="65%">
+    <stop offset="0%" stop-color="#bfdbfe"/>
+    <stop offset="60%" stop-color="#60a5fa"/>
+    <stop offset="100%" stop-color="#3b82f6"/>
+  </radialGradient>
+</defs>
+
+<!-- Glow central -->
+<circle cx="170" cy="170" r="140" fill="url(#glow1)"/>
+
+<!-- Nó central fixo -->
+<circle cx="170" cy="170" r="18" fill="url(#ball)"/>
+<circle cx="170" cy="163" r="5.5" fill="white" opacity="0.9"/>
+<ellipse cx="170" cy="179" rx="8" ry="5" fill="white" opacity="0.9"/>
+
+<!-- CAMADA 1: 4 nós a raio 80, gira 20s -->
+<g>
+  <animateTransform attributeName="transform" type="rotate" from="0 170 170" to="360 170 170" dur="20s" repeatCount="indefinite"/>
+  <!-- raio 80: pontos em 0°, 90°, 180°, 270° -->
+  <!-- 0°: (170, 90) | 90°: (250, 170) | 180°: (170, 250) | 270°: (90, 170) -->
+  <g stroke="#93c5fd" stroke-width="0.7" fill="none" opacity="0.5">
+    <line x1="170" y1="170" x2="170" y2="90"/>
+    <line x1="170" y1="170" x2="250" y2="170"/>
+    <line x1="170" y1="170" x2="170" y2="250"/>
+    <line x1="170" y1="170" x2="90" y2="170"/>
+    <line x1="170" y1="90" x2="250" y2="170"/>
+    <line x1="250" y1="170" x2="170" y2="250"/>
+    <line x1="170" y1="250" x2="90" y2="170"/>
+    <line x1="90" y1="170" x2="170" y2="90"/>
+  </g>
+  <circle cx="170" cy="90" r="14" fill="url(#ball)"/>
+  <circle cx="170" cy="84" r="4" fill="white" opacity="0.9"/>
+  <ellipse cx="170" cy="97" rx="6" ry="4" fill="white" opacity="0.9"/>
+
+  <circle cx="250" cy="170" r="14" fill="url(#ball2)"/>
+  <circle cx="250" cy="164" r="4" fill="white" opacity="0.9"/>
+  <ellipse cx="250" cy="177" rx="6" ry="4" fill="white" opacity="0.9"/>
+
+  <circle cx="170" cy="250" r="14" fill="url(#ball2)"/>
+  <circle cx="170" cy="244" r="4" fill="white" opacity="0.9"/>
+  <ellipse cx="170" cy="257" rx="6" ry="4" fill="white" opacity="0.9"/>
+
+  <circle cx="90" cy="170" r="14" fill="url(#ball)"/>
+  <circle cx="90" cy="164" r="4" fill="white" opacity="0.9"/>
+  <ellipse cx="90" cy="177" rx="6" ry="4" fill="white" opacity="0.9"/>
+</g>
+
+<!-- CAMADA 2: 4 nós a raio 80, girados 45°, gira ao contrário 14s -->
+<!-- 45°: (227,113) | 135°: (227,227) | 225°: (113,227) | 315°: (113,113) -->
+<g>
+  <animateTransform attributeName="transform" type="rotate" from="0 170 170" to="-360 170 170" dur="14s" repeatCount="indefinite"/>
+  <g stroke="#60a5fa" stroke-width="0.6" fill="none" opacity="0.4">
+    <line x1="170" y1="170" x2="227" y2="113"/>
+    <line x1="170" y1="170" x2="227" y2="227"/>
+    <line x1="170" y1="170" x2="113" y2="227"/>
+    <line x1="170" y1="170" x2="113" y2="113"/>
+    <line x1="227" y1="113" x2="227" y2="227"/>
+    <line x1="227" y1="227" x2="113" y2="227"/>
+    <line x1="113" y1="227" x2="113" y2="113"/>
+    <line x1="113" y1="113" x2="227" y2="113"/>
+  </g>
+  <circle cx="227" cy="113" r="12" fill="url(#ball3)"/>
+  <circle cx="227" cy="107" r="3.5" fill="white" opacity="0.9"/>
+  <ellipse cx="227" cy="119" rx="5.5" ry="3.5" fill="white" opacity="0.9"/>
+
+  <circle cx="227" cy="227" r="12" fill="url(#ball2)"/>
+  <circle cx="227" cy="221" r="3.5" fill="white" opacity="0.9"/>
+  <ellipse cx="227" cy="233" rx="5.5" ry="3.5" fill="white" opacity="0.9"/>
+
+  <circle cx="113" cy="227" r="12" fill="url(#ball3)"/>
+  <circle cx="113" cy="221" r="3.5" fill="white" opacity="0.9"/>
+  <ellipse cx="113" cy="233" rx="5.5" ry="3.5" fill="white" opacity="0.9"/>
+
+  <circle cx="113" cy="113" r="12" fill="url(#ball2)"/>
+  <circle cx="113" cy="107" r="3.5" fill="white" opacity="0.9"/>
+  <ellipse cx="113" cy="119" rx="5.5" ry="3.5" fill="white" opacity="0.9"/>
+</g>
+
+<!-- CAMADA 3: 6 nós a raio 130, gira devagar 35s -->
+<!-- 0°,60°,120°,180°,240°,300° -->
+<g>
+  <animateTransform attributeName="transform" type="rotate" from="0 170 170" to="360 170 170" dur="35s" repeatCount="indefinite"/>
+  <g stroke="#bfdbfe" stroke-width="0.4" fill="none" opacity="0.3">
+    <line x1="170" y1="170" x2="170" y2="40"/>
+    <line x1="170" y1="170" x2="283" y2="105"/>
+    <line x1="170" y1="170" x2="283" y2="235"/>
+    <line x1="170" y1="170" x2="170" y2="300"/>
+    <line x1="170" y1="170" x2="57" y2="235"/>
+    <line x1="170" y1="170" x2="57" y2="105"/>
+  </g>
+  <circle cx="170" cy="40" r="9" fill="url(#ball3)"/>
+  <circle cx="170" cy="35" r="2.5" fill="white" opacity="0.9"/>
+  <ellipse cx="170" cy="46" rx="4" ry="2.5" fill="white" opacity="0.9"/>
+
+  <circle cx="283" cy="105" r="9" fill="url(#ball2)"/>
+  <circle cx="283" cy="100" r="2.5" fill="white" opacity="0.9"/>
+  <ellipse cx="283" cy="111" rx="4" ry="2.5" fill="white" opacity="0.9"/>
+
+  <circle cx="283" cy="235" r="9" fill="url(#ball3)"/>
+  <circle cx="283" cy="230" r="2.5" fill="white" opacity="0.9"/>
+  <ellipse cx="283" cy="241" rx="4" ry="2.5" fill="white" opacity="0.9"/>
+
+  <circle cx="170" cy="300" r="9" fill="url(#ball2)"/>
+  <circle cx="170" cy="295" r="2.5" fill="white" opacity="0.9"/>
+  <ellipse cx="170" cy="306" rx="4" ry="2.5" fill="white" opacity="0.9"/>
+
+  <circle cx="57" cy="235" r="9" fill="url(#ball3)"/>
+  <circle cx="57" cy="230" r="2.5" fill="white" opacity="0.9"/>
+  <ellipse cx="57" cy="241" rx="4" ry="2.5" fill="white" opacity="0.9"/>
+
+  <circle cx="57" cy="105" r="9" fill="url(#ball2)"/>
+  <circle cx="57" cy="100" r="2.5" fill="white" opacity="0.9"/>
+  <ellipse cx="57" cy="111" rx="4" ry="2.5" fill="white" opacity="0.9"/>
+</g>
+
+<!-- Sparkles pulsando -->
+<circle cx="130" cy="130" r="1.5" fill="#93c5fd" opacity="0.7">
+  <animate attributeName="opacity" values="0.7;0.1;0.7" dur="3s" repeatCount="indefinite"/>
+</circle>
+<circle cx="210" cy="125" r="1.5" fill="#bfdbfe" opacity="0.6">
+  <animate attributeName="opacity" values="0.6;0.1;0.6" dur="2.5s" repeatCount="indefinite"/>
+</circle>
+<circle cx="125" cy="210" r="1.5" fill="#60a5fa" opacity="0.5">
+  <animate attributeName="opacity" values="0.5;0.1;0.5" dur="4s" repeatCount="indefinite"/>
+</circle>
+<circle cx="215" cy="215" r="1.5" fill="#93c5fd" opacity="0.6">
+  <animate attributeName="opacity" values="0.6;0.1;0.6" dur="3.5s" repeatCount="indefinite"/>
+</circle>
+</svg>
