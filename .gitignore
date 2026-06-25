@@ -1,0 +1,32 @@
+# Ambiente virtual
+venv/
+
+# Variáveis de ambiente (senhas!)
+.env
+.env.save
+
+# Backups
+*.bak
+*.bak_*
+
+# Scripts de manutenção temporários
+fix_*.py
+rotas_disc_career.py
+diagnostico_email.py
+test_reset_senha.py
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+logs/*.log
+
+# Uploads de usuários
+uploads/*
+!uploads/.gitkeep
+
+# IDE
+.vscode/
+.idea/

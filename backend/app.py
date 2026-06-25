@@ -16,6 +16,9 @@ from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 import secrets
 import hashlib
+import csv as _csv
+import io as _io
+from flask import Response as _Response
 
 load_dotenv()
 
@@ -618,12 +621,13 @@ def create_employee():
     conn = get_db()
     c = conn.cursor()
     c.execute("""INSERT INTO employees (id, name, email, department, position, manager,
-                 admission_date, birth_date, phone, cpf, status, notes)
-                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                 admission_date, birth_date, phone, cpf, status, notes, is_parent, parent_type)
+                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
               (emp_id, data.get('name'), data.get('email'), data.get('department'),
                data.get('position'), data.get('manager'), data.get('admission_date'),
                data.get('birth_date'), data.get('phone'), data.get('cpf'),
-               data.get('status', 'active'), data.get('notes')))
+               data.get('status', 'active'), data.get('notes'),
+               data.get('is_parent', False), data.get('parent_type', '')))
     conn.commit()
     conn.close()
     log_action(session['user_id'], 'CREATE', 'employee', emp_id, data.get('name'))
@@ -652,10 +656,11 @@ def update_employee(emp_id):
     c = conn.cursor()
     c.execute("""UPDATE employees SET name=%s, email=%s, department=%s, position=%s, manager=%s,
                  admission_date=%s, birth_date=%s, phone=%s, cpf=%s, status=%s, notes=%s,
-                 updated_at=CURRENT_TIMESTAMP WHERE id=%s""",
+                 is_parent=%s, parent_type=%s, updated_at=CURRENT_TIMESTAMP WHERE id=%s""",
               (data.get('name'), data.get('email'), data.get('department'), data.get('position'),
                data.get('manager'), data.get('admission_date'), data.get('birth_date'),
-               data.get('phone'), data.get('cpf'), data.get('status'), data.get('notes'), emp_id))
+               data.get('phone'), data.get('cpf'), data.get('status'), data.get('notes'),
+               data.get('is_parent', False), data.get('parent_type', ''), emp_id))
     conn.commit()
     conn.close()
     return jsonify({'success': True})
@@ -1111,6 +1116,237 @@ def get_audit():
     logs = rows_to_list(c.fetchall(), c)
     conn.close()
     return jsonify(logs)
+
+
+# ── IMPORT / EXPORT COLABORADORES ────────────────────────────────────────────
+_EMPLOYEE_FIELDS = [
+    'name', 'email', 'department', 'position', 'manager',
+    'admission_date', 'birth_date', 'phone', 'cpf', 'status', 'notes'
+]
+
+@app.route('/api/employees/export', methods=['GET'])
+@login_required
+def export_employees():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT * FROM employees ORDER BY name ASC")
+    employees = rows_to_list(c.fetchall(), c)
+    conn.close()
+
+    MAPA = [
+        ('name','Nome'),('email','E-mail'),('department','Departamento'),
+        ('position','Cargo'),('manager','Gestor'),('admission_date','Admissao'),
+        ('birth_date','Nascimento'),('phone','Telefone'),('cpf','CPF'),
+        ('status','Status'),('is_parent','Pai_Mae'),('parent_type','Tipo_Pai_Mae'),
+        ('notes','Observacoes'),
+    ]
+    output = _io.StringIO()
+    writer = _csv.writer(output, delimiter=';')
+    writer.writerow([col for _,col in MAPA])
+    for emp in employees:
+        linha = []
+        for field,_ in MAPA:
+            val = emp.get(field, '') or ''
+            if isinstance(val, bool):
+                val = 'Sim' if val else 'Nao'
+            linha.append(val)
+        writer.writerow(linha)
+
+    csv_bytes = output.getvalue().encode('utf-8-sig')
+    return _Response(
+        csv_bytes,
+        mimetype='text/csv',
+        headers={
+            'Content-Disposition': 'attachment; filename=colaboradores.csv',
+            'Content-Type': 'text/csv; charset=utf-8'
+        }
+    )
+
+@app.route('/api/employees/import', methods=['POST'])
+@login_required
+def import_employees():
+    if session.get('user_role') not in ('admin', 'rh'):
+        return jsonify({'error': 'Acesso negado'}), 403
+
+    file = request.files.get('file')
+    if not file:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+
+    filename = file.filename.lower()
+    if not (filename.endswith('.csv') or filename.endswith('.xlsx') or filename.endswith('.xls')):
+        return jsonify({'error': 'Formato invalido. Use CSV ou XLSX.'}), 400
+
+    def norm(v):
+        if v is None:
+            return ''
+        if hasattr(v, 'strftime'):
+            return v.strftime('%Y-%m-%d')
+        return str(v).strip()
+
+    def get_field(row, *keys):
+        for k in keys:
+            val = row.get(k)
+            if val is not None and str(val).strip() not in ('', 'None'):
+                return norm(val)
+        return ''
+
+    try:
+        if filename.endswith('.csv'):
+            content = file.read().decode('utf-8-sig')
+            reader = _csv.DictReader(_io.StringIO(content))
+            rows = list(reader)
+        else:
+            import openpyxl
+            wb = openpyxl.load_workbook(file)
+            ws = wb.active
+            headers = [str(cell.value).strip() if cell.value else '' for cell in ws[1]]
+            rows = []
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                rows.append(dict(zip(headers, row)))
+
+        conn = get_db()
+        c = conn.cursor()
+        inserted = 0
+        skipped = 0
+
+        for row in rows:
+            name  = get_field(row, 'name', 'Nome', 'nome')
+            email = get_field(row, 'email', 'E-mail', 'Email', 'e-mail')
+
+            if not name or not email:
+                skipped += 1
+                continue
+
+            c.execute("SELECT id FROM employees WHERE email = %s", (email,))
+            if c.fetchone():
+                skipped += 1
+                continue
+
+            emp_id = str(uuid.uuid4())
+            c.execute("""
+                INSERT INTO employees
+                  (id, name, email, department, position, manager,
+                   admission_date, birth_date, phone, cpf, status, notes)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            """, (
+                emp_id,
+                name,
+                email,
+                get_field(row, 'department', 'Departamento', 'departamento'),
+                get_field(row, 'position', 'Cargo', 'cargo'),
+                get_field(row, 'manager', 'Gestor', 'gestor'),
+                get_field(row, 'admission_date', 'Admiss\u00e3o', 'Admissao', 'data_admissao') or None,
+                get_field(row, 'birth_date', 'Nascimento', 'data_nascimento') or None,
+                get_field(row, 'phone', 'Telefone', 'telefone'),
+                get_field(row, 'cpf', 'CPF'),
+                get_field(row, 'status', 'Status') or 'active',
+                get_field(row, 'notes', 'Observa\u00e7\u00f5es', 'Observacoes', 'observacoes'),
+            ))
+            inserted += 1
+
+        conn.commit()
+        conn.close()
+        log_action(session['user_id'], 'IMPORT', 'employee', None, f'{inserted} importados')
+        return jsonify({'success': True, 'inserted': inserted, 'skipped': skipped})
+
+    except Exception as e:
+        return jsonify({'error': f'Erro ao processar arquivo: {str(e)}'}), 500
+
+
+@app.route('/api/employees/<emp_id>/permanent', methods=['DELETE'])
+@login_required
+def delete_employee_permanent(emp_id):
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("DELETE FROM employees WHERE id = %s", (emp_id,))
+    conn.commit()
+    conn.close()
+    log_action(session['user_id'], 'DELETE_PERMANENT', 'employee', emp_id)
+    return jsonify({'success': True})
+
+
+# ── DISC ──────────────────────────────────────────────────────────────────────
+@app.route('/api/employees/<emp_id>/disc', methods=['GET'])
+@login_required
+def get_disc(emp_id):
+    conn = get_db()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT * FROM disc_results WHERE employee_id = %s ORDER BY created_at DESC LIMIT 1", (emp_id,))
+        row = c.fetchone()
+        result = row_to_dict(row, c) if row else None
+    except:
+        result = None
+    conn.close()
+    return jsonify(result)
+
+@app.route('/api/employees/<emp_id>/disc', methods=['POST'])
+@login_required
+def save_disc(emp_id):
+    data = request.get_json()
+    answers = data.get('answers', [])
+    # answers é lista de strings: 'D', 'I', 'S' ou 'C'
+    scores = {'D': 0, 'I': 0, 'S': 0, 'C': 0}
+    for ans in answers:
+        if ans in scores:
+            scores[ans] += 1
+    total = sum(scores.values()) or 1
+    pct = {k: round(v/total*100) for k, v in scores.items()}
+    dominant = max(scores, key=scores.get)
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT id FROM disc_results WHERE employee_id = %s", (emp_id,))
+    existing = c.fetchone()
+    if existing:
+        c.execute(
+            "UPDATE disc_results SET d_score=%s, i_score=%s, s_score=%s, c_score=%s, dominant_profile=%s, answers=%s, updated_at=CURRENT_TIMESTAMP WHERE employee_id=%s",
+            (pct['D'], pct['I'], pct['S'], pct['C'], dominant, json.dumps(answers), emp_id)
+        )
+    else:
+        c.execute(
+            "INSERT INTO disc_results (id, employee_id, d_score, i_score, s_score, c_score, dominant_profile, answers) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+            (str(uuid.uuid4()), emp_id, pct['D'], pct['I'], pct['S'], pct['C'], dominant, json.dumps(answers))
+        )
+    conn.commit()
+    conn.close()
+    log_action(session['user_id'], 'DISC', 'employee', emp_id)
+    return jsonify({'success': True, 'scores': pct, 'dominant': dominant})
+
+# ── CAREER HISTORY ─────────────────────────────────────────────────────────────
+@app.route('/api/employees/<emp_id>/career', methods=['GET'])
+@login_required
+def get_career(emp_id):
+    conn = get_db()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT * FROM career_history WHERE employee_id = %s ORDER BY created_at DESC", (emp_id,))
+        rows = rows_to_list(c.fetchall(), c)
+    except:
+        rows = []
+    conn.close()
+    return jsonify(rows)
+
+@app.route('/api/employees/<emp_id>/career', methods=['POST'])
+@login_required
+def add_career(emp_id):
+    data = request.get_json()
+    rec_id = str(uuid.uuid4())
+    conn = get_db()
+    c = conn.cursor()
+    try:
+        c.execute(
+            "INSERT INTO career_history (id, employee_id, event_type, previous_position, new_position, previous_department, new_department, event_date, notes) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (rec_id, emp_id, data.get('event_type'), data.get('previous_position'), data.get('new_position'), data.get('previous_department'), data.get('new_department'), data.get('event_date'), data.get('notes'))
+        )
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+    conn.close()
+    return jsonify({'success': True, 'id': rec_id})
 
 
 # ── SERVE FRONTEND ────────────────────────────────────────────────────────────
