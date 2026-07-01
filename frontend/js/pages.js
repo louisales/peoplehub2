@@ -2341,87 +2341,105 @@ async function submitFormTemplate(title, n) {
   if (res) { closeModal(); showToast('Solicitação enviada!'); navigate('ops-formularios'); }
 }
 
-// ── DISC QUESTIONÁRIO ─────────────────────────────────────────────────────────
-const DISC_QUESTIONS = [
-  { q: "Ao receber uma nova demanda urgente do cliente, você tende a:", D: "Agir imediatamente com foco em resolver rápido", I: "Mobilizar a equipe com entusiasmo para resolver juntos", S: "Seguir o procedimento estabelecido com calma e cuidado", C: "Analisar todos os detalhes antes de tomar qualquer ação" },
-  { q: "Em uma reunião de equipe com divergências, você costuma:", D: "Defender sua posição com firmeza e buscar uma decisão rápida", I: "Tentar convencer os outros com argumentos e entusiasmo", S: "Ouvir a todos e buscar um consenso que preserve o grupo", C: "Analisar os dados apresentados e apontar inconsistências" },
-  { q: "Diante de um erro em um lançamento contábil crítico, você:", D: "Resolve imediatamente e garante que não impacte o cliente", I: "Comunica abertamente à equipe e busca ajuda coletiva", S: "Segue o protocolo, notifica o responsável e age com calma", C: "Investiga a causa raiz de forma minuciosa antes de corrigir" },
-  { q: "Sua principal motivação no trabalho é:", D: "Atingir metas e ser reconhecido pelos resultados", I: "Construir relações e influenciar positivamente as pessoas", S: "Contribuir de forma consistente e manter a harmonia do time", C: "Fazer o trabalho com qualidade e exatidão técnica" },
-  { q: "Como você lida com prazos apertados de obrigações acessórias?", D: "Assume o controle e garante a entrega a qualquer custo", I: "Motiva a equipe e cria um clima de superação coletiva", S: "Segue o planejamento com disciplina e antecipa os riscos", C: "Verifica cada etapa para garantir que nada saia errado" },
-  { q: "Quando precisa explicar algo técnico a um cliente sem conhecimento contábil:", D: "Vai direto ao ponto, focando no impacto para o negócio", I: "Usa exemplos práticos e mantém a conversa descontraída", S: "Explica com paciência, no ritmo do cliente, sem pressão", C: "Detalha cada ponto com precisão, garantindo que entenda" },
-  { q: "Ao aprender um novo sistema ou tecnologia, você:", D: "Aprende o essencial rapidamente para já usar e evoluir", I: "Compartilha o aprendizado com a equipe animadamente", S: "Segue o treinamento passo a passo e pratica com calma", C: "Estuda a fundo a documentação antes de começar a usar" },
-  { q: "Em projetos em grupo, seu papel natural é:", D: "Liderar e direcionar para que o objetivo seja alcançado", I: "Engajar as pessoas e manter o clima positivo do grupo", S: "Executar com consistência e apoiar quem precisa de ajuda", C: "Garantir a qualidade técnica e a precisão das entregas" },
-  { q: "Como você reage quando recebe um feedback crítico?", D: "Aceita, mas já pensa em como agir para superar a crítica", I: "Discute abertamente e busca entender o ponto de vista", S: "Escuta com atenção e reflete antes de responder", C: "Analisa se o feedback tem base nos fatos e dados" },
-  { q: "Ao identificar uma oportunidade de melhoria nos processos:", D: "Propõe e implementa rapidamente, sem esperar aprovação", I: "Apresenta a ideia com entusiasmo para engajar a equipe", S: "Sugere com cautela, considerando o impacto em todos", C: "Elabora um estudo detalhado antes de propor qualquer mudança" },
-  { q: "Diante de uma mudança inesperada nos procedimentos internos, você:", D: "Se adapta rapidamente e foca no que precisa ser feito", I: "Vê como uma oportunidade e motiva o time a abraçar a mudança", S: "Prefere entender bem a mudança antes de aplicar", C: "Questiona se a mudança foi bem planejada e documentada" },
-  { q: "Sua forma de se comunicar com a equipe é geralmente:", D: "Direta e objetiva, sem rodeios", I: "Animada, expressiva e aberta ao diálogo", S: "Tranquila, empática e sempre disponível para ouvir", C: "Precisa, estruturada e baseada em fatos" },
-  { q: "Quando o cliente está insatisfeito com uma entrega:", D: "Age de imediato para resolver e recuperar a confiança", I: "Coloca empatia na conversa e reconquista o cliente", S: "Ouve com calma, pede desculpas e oferece uma solução segura", C: "Analisa o que saiu errado e apresenta uma solução embasada" },
-  { q: "Sua maior dificuldade no ambiente de trabalho costuma ser:", D: "Lidar com a lentidão e indecisão das pessoas ao redor", I: "Manter o foco em tarefas repetitivas e de longa duração", S: "Lidar com mudanças frequentes e ambientes instáveis", C: "Trabalhar com prazos curtos que impedem a análise detalhada" },
-  { q: "O que mais te satisfaz em uma entrega bem-feita?", D: "Ter alcançado o resultado dentro do prazo e com impacto", I: "O reconhecimento do cliente e da equipe pelo trabalho", S: "A segurança de que tudo foi feito com cuidado e responsabilidade", C: "A certeza de que cada detalhe foi verificado e está correto" },
-  { q: "Como você costuma tomar decisões importantes?", D: "Rapidamente, com base na experiência e no instinto", I: "Conversando com pessoas e levando em conta as relações", S: "Com cautela, considerando o impacto em todos os envolvidos", C: "Com base em dados, análises e evidências concretas" },
-  { q: "Em momentos de alta pressão (como fechamento fiscal), você:", D: "Assume o comando e garante que a equipe entregue", I: "Mantém o clima positivo e incentiva todos a persistirem", S: "Mantém a calma e trabalha de forma constante até o fim", C: "Reddobra a atenção nos detalhes para não cometer erros" },
-  { q: "Qual das seguintes frases mais representa você?", D: "Resultados falam mais alto que palavras", I: "A energia do time é o nosso maior ativo", S: "Consistência e confiança constroem o sucesso", C: "A qualidade não admite atalhos" },
-  { q: "Como você prefere receber instruções em um novo projeto?", D: "Objetivo claro e autonomia para executar como achar melhor", I: "Reunião de alinhamento com troca de ideias e brainstorming", S: "Explicação detalhada do processo e suporte ao longo do caminho", C: "Documentação completa com especificações e critérios de qualidade" },
-  { q: "O que você mais valoriza em um líder?", D: "Clareza nos objetivos e reconhecimento por resultados", I: "Carisma, abertura ao diálogo e capacidade de inspirar", S: "Estabilidade, justiça e suporte constante à equipe", C: "Competência técnica, rigor e decisões baseadas em dados" },
+// ── DISC QUESTIONÁRIO (Metodologia de Adjetivos) ─────────────────────────────
+// Banco de palavras mapeadas para cada dimensão DISC. Pontuação por contagem de
+// adjetivos marcados em cada dimensão, normalizada em percentual.
+const DISC_WORDS = [
+  { word: "Alegre", dim: "I" }, { word: "Animado", dim: "I" }, { word: "Anti-Social", dim: "C" },
+  { word: "Arrogante", dim: "D" }, { word: "Ativo", dim: "D" }, { word: "Audacioso (Ousado)", dim: "D" },
+  { word: "Auto-Disciplinado", dim: "C" }, { word: "Auto-Suficiente", dim: "D" },
+  { word: "Barulhento", dim: "I" }, { word: "Bem-Humorado", dim: "I" }, { word: "Bem-Quisto", dim: "I" },
+  { word: "Bom Companheiro", dim: "S" }, { word: "Calculista", dim: "C" }, { word: "Calmo", dim: "S" },
+  { word: "Compreensivo", dim: "S" }, { word: "Comunicativo", dim: "I" },
+  { word: "Conservador", dim: "C" }, { word: "Contagiante", dim: "I" }, { word: "Corajoso", dim: "D" },
+  { word: "Crítico", dim: "C" }, { word: "Cumpridor", dim: "C" }, { word: "Decidido", dim: "D" },
+  { word: "Dedicado", dim: "S" }, { word: "Depressivo", dim: "S" },
+  { word: "Desconfiado", dim: "C" }, { word: "Desmotivado", dim: "S" }, { word: "Desorganizado", dim: "I" },
+  { word: "Destacado", dim: "D" }, { word: "Discreto", dim: "C" }, { word: "Eficiente", dim: "C" },
+  { word: "Egocêntrico", dim: "D" }, { word: "Egoísta", dim: "D" },
+  { word: "Empolgante", dim: "I" }, { word: "Enérgico", dim: "D" }, { word: "Entusiasta", dim: "I" },
+  { word: "Equilibrado", dim: "S" }, { word: "Espalhafatoso", dim: "I" }, { word: "Estimulante", dim: "I" },
+  { word: "Exagerado", dim: "I" }, { word: "Exigente", dim: "D" },
+  { word: "Extrovertido", dim: "I" }, { word: "Exuberante", dim: "I" }, { word: "Firme", dim: "D" },
+  { word: "Frio", dim: "C" }, { word: "Habilidoso", dim: "C" }, { word: "Idealista", dim: "I" },
+  { word: "Impaciente", dim: "D" }, { word: "Indeciso", dim: "S" },
+  { word: "Independente", dim: "D" }, { word: "Indisciplinado", dim: "I" }, { word: "Inflexível", dim: "C" },
+  { word: "Influenciador", dim: "I" }, { word: "Ingênuo", dim: "S" }, { word: "Inseguro", dim: "S" },
+  { word: "Insensível", dim: "D" }, { word: "Intolerante", dim: "D" },
+  { word: "Introvertido", dim: "C" }, { word: "Leal", dim: "S" }, { word: "Líder", dim: "D" },
+  { word: "Medroso", dim: "S" }, { word: "Metódico", dim: "C" }, { word: "Minucioso", dim: "C" },
+  { word: "Modesto", dim: "S" }, { word: "Orgulhoso", dim: "D" },
+  { word: "Otimista", dim: "I" }, { word: "Paciente", dim: "S" }, { word: "Perfeccionista", dim: "C" },
+  { word: "Persistente", dim: "D" }, { word: "Pessimista", dim: "C" }, { word: "Popular", dim: "I" },
+  { word: "Prático", dim: "D" }, { word: "Pretensioso", dim: "D" },
+  { word: "Procrastinador", dim: "S" }, { word: "Racional", dim: "C" }, { word: "Reservado", dim: "C" },
+  { word: "Resoluto (Decidido)", dim: "D" }, { word: "Rotineiro", dim: "S" }, { word: "Sarcástico", dim: "D" },
+  { word: "Sensível", dim: "S" }, { word: "Sentimental", dim: "S" },
+  { word: "Simpático", dim: "I" }, { word: "Sincero", dim: "S" }, { word: "Temeroso", dim: "S" },
+  { word: "Teórico", dim: "C" }, { word: "Tranquilo", dim: "S" }, { word: "Vaidoso", dim: "I" },
+  { word: "Vingativo", dim: "D" },
 ];
 
-let _discAnswers = [];
+let _discSelected = [];
 let _discEmpId = '';
 
 function openDISC(empId) {
-  _discAnswers = new Array(DISC_QUESTIONS.length).fill(null);
+  _discSelected = [];
   _discEmpId = empId;
-  renderDISCQuestion(0);
+  renderDISCWords();
 }
 
-function renderDISCQuestion(idx) {
-  const q = DISC_QUESTIONS[idx];
-  const total = DISC_QUESTIONS.length;
-  const answered = _discAnswers.filter(a => a !== null).length;
-  const pct = Math.round((answered / total) * 100);
-  const opts = ['D','I','S','C'].map(key => `
-    <button onclick="selectDISCAnswer(${idx},'${key}')" style="
-      display:block;width:100%;text-align:left;padding:12px 16px;margin-bottom:8px;
-      border:2px solid ${_discAnswers[idx]===key?'#94a3b8':'var(--border)'};
-      background:${_discAnswers[idx]===key?'#e2e8f0':'var(--surface)'};
-      border-radius:var(--radius);cursor:pointer;font-size:13px;font-family:var(--font);
-      color:${_discAnswers[idx]===key?'#1e293b':'var(--text)'};font-weight:${_discAnswers[idx]===key?'600':'400'}">
-      ${q[key]}
-    </button>`).join('');
+function toggleDISCWord(word) {
+  const idx = _discSelected.indexOf(word);
+  if (idx >= 0) _discSelected.splice(idx, 1);
+  else _discSelected.push(word);
+  renderDISCWords();
+}
 
-  openModal(`DISC — Questão ${idx+1} de ${total}`, `
-    <div style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-3);margin-bottom:4px">
-        <span>Progresso</span><span>${answered}/${total} respondidas</span>
-      </div>
-      <div style="height:6px;background:var(--border);border-radius:4px">
-        <div style="width:${pct}%;height:6px;background:var(--primary);border-radius:4px;transition:width .3s"></div>
-      </div>
+function renderDISCWords() {
+  const minWords = 8;
+  const count = _discSelected.length;
+  const wordsHtml = DISC_WORDS.map(w => {
+    const selected = _discSelected.includes(w.word);
+    return `<button onclick="toggleDISCWord('${w.word.replace(/'/g,"\\'")}')" style="
+      padding:9px 14px;border-radius:8px;cursor:pointer;font-size:12.5px;font-family:var(--font);
+      border:1.5px solid ${selected ? 'var(--primary)' : 'var(--border)'};
+      background:${selected ? 'var(--primary-light)' : 'var(--surface)'};
+      color:${selected ? 'var(--primary)' : 'var(--text)'};
+      font-weight:${selected ? '600' : '400'};">${w.word}</button>`;
+  }).join('');
+
+  openModal('Teste DISC — Marque os adjetivos que mais te representam', `
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:4px">
+      Marque <strong>todos os adjetivos</strong> que você acredita que mais te representam no ambiente de trabalho. Responda sozinho, com sinceridade, sem ajuda de terceiros.
     </div>
-    <div style="font-size:14px;font-weight:600;margin-bottom:16px;line-height:1.5">${q.q}</div>
-    ${opts}
-    <div class="modal-footer" style="justify-content:space-between">
-      <button class="btn-secondary" onclick="${idx > 0 ? 'renderDISCQuestion('+(idx-1)+')' : 'closeModal()'}">${idx > 0 ? '← Anterior' : 'Cancelar'}</button>
-      <button class="btn-primary" onclick="${idx < total-1 ? 'renderDISCQuestion('+(idx+1)+')' : 'submitDISC()'}" ${_discAnswers[idx]===null?'disabled':''}>
-        ${idx < total-1 ? 'Próxima →' : 'Finalizar e Ver Resultado'}
+    <div style="font-size:11.5px;color:var(--text-3);margin-bottom:14px">
+      Selecionados: <strong style="color:${count >= minWords ? '#16a34a' : 'var(--text-2)'}">${count}</strong> ${count < minWords ? `(mínimo recomendado: ${minWords})` : '✓'}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;max-height:420px;overflow-y:auto;padding:4px 2px">
+      ${wordsHtml}
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;margin-top:16px">
+      <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="submitDISC()" ${count < minWords ? 'disabled' : ''}>
+        Finalizar e Ver Resultado (${count} selecionados)
       </button>
     </div>
-  `);
-}
-
-function selectDISCAnswer(idx, answer) {
-  _discAnswers[idx] = answer;
-  renderDISCQuestion(idx);
-  // O estilo da opcao selecionada e aplicado via inline style
-  // no renderDISCQuestion usando _discAnswers[idx]===key
+  `, 'lg');
 }
 
 async function submitDISC() {
-  if (_discAnswers.some(a => a === null)) {
-    showToast('Responda todas as questões antes de finalizar', 'error');
+  if (_discSelected.length < 8) {
+    showToast('Selecione pelo menos 8 adjetivos antes de finalizar', 'error');
     return;
   }
-  const res = await api.post('/employees/' + _discEmpId + '/disc', { answers: _discAnswers });
+  // Mapeia cada palavra selecionada para sua dimensão DISC correspondente
+  const answers = _discSelected.map(word => {
+    const found = DISC_WORDS.find(w => w.word === word);
+    return found ? found.dim : null;
+  }).filter(Boolean);
+
+  const res = await api.post('/employees/' + _discEmpId + '/disc', { answers });
   if (res?.success) {
     closeModal();
     showToast('DISC aplicado com sucesso!');
