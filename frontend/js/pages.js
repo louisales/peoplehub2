@@ -3010,3 +3010,212 @@ async function renderDISCPerfis() {
   </div>
 </div>`;
 }
+
+
+// ─── POLÍTICAS DE EMPRESA ────────────────────────────────────────────────────
+async function renderPoliticas() {
+  const isAdmin = userCan('admin');
+  const policies = await api.get('/policies') || [];
+
+  // Agrupa por categoria
+  const grouped = {};
+  policies.forEach(p => {
+    if (!grouped[p.category]) grouped[p.category] = [];
+    grouped[p.category].push(p);
+  });
+
+  const categoriaIcons = {
+    'RH': 'fa-people-group',
+    'Financeiro': 'fa-coins',
+    'TI': 'fa-microchip',
+    'Compliance': 'fa-shield-halved',
+    'Operacional': 'fa-gears',
+    'Geral': 'fa-book',
+  };
+
+  return `
+<div class="page-header">
+  <div class="page-title"><i class="fa-solid fa-book"></i>Políticas de Empresa</div>
+  <div class="page-actions">
+    ${isAdmin ? `<button class="btn-primary" onclick="openNewPolicy()"><i class="fa-solid fa-plus"></i> Nova Política</button>` : ''}
+  </div>
+</div>
+<div class="page-body">
+  ${policies.length === 0 ? `
+    <div class="empty-state">
+      <i class="fa-solid fa-book"></i>
+      <h3>Nenhuma política cadastrada</h3>
+      <p>Documente as políticas e diretrizes da empresa.</p>
+    </div>` :
+    Object.entries(grouped).map(([cat, items]) => `
+      <div style="margin-bottom:28px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <i class="fa-solid ${categoriaIcons[cat] || 'fa-folder'}" style="color:var(--primary);font-size:15px"></i>
+          <span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-2)">${cat}</span>
+        </div>
+        <div class="content-grid">
+          ${items.map(p => `
+            <div class="content-card" style="cursor:pointer" onclick="openViewPolicy('${p.id}')">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+                <div class="content-card-title" style="margin-bottom:6px">${p.title}</div>
+                ${isAdmin ? `
+                  <div style="display:flex;gap:4px;flex-shrink:0">
+                    <button class="btn-icon" title="Editar" onclick="event.stopPropagation();openEditPolicy('${p.id}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn-icon" title="Excluir" onclick="event.stopPropagation();deletePolicy('${p.id}')"><i class="fa-solid fa-trash"></i></button>
+                  </div>` : ''}
+              </div>
+              <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+                ${{alta:'<span style="background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">🔴 Alta</span>',media:'<span style="background:#fef9c3;color:#a16207;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">🟡 Média</span>',baixa:'<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">🟢 Baixa</span>'}[p.priority] || ''}
+                ${p.status === 'inativa' ? '<span style="background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">⚫ Inativa</span>' : '<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">✅ Ativa</span>'}
+              </div>
+              <div class="content-card-meta" style="margin-top:8px">
+                <span><i class="fa-solid fa-calendar" style="margin-right:4px"></i>${fmtDate(p.created_at)}</span>
+                ${p.pdf_filename ? '<span style="color:var(--primary)"><i class="fa-solid fa-file-pdf" style="margin-right:4px"></i>PDF anexo</span>' : ''}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('')}
+</div>`;
+}
+
+async function openViewPolicy(id) {
+  const p = await api.get('/policies/' + id);
+  if (!p) return;
+  openModal(p.title, `
+    <div style="margin-bottom:12px">
+      <span style="background:var(--primary-light);color:var(--primary);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">${p.category}</span>
+    </div>
+    ${p.content ? `<div style="font-size:14px;line-height:1.7;color:var(--text-1);margin-bottom:16px;white-space:pre-wrap">${p.content}</div>` : ''}
+    ${p.pdf_filename ? `
+      <div style="margin-top:16px;padding:12px 16px;background:var(--surface-2);border-radius:var(--radius);display:flex;align-items:center;gap:10px">
+        <i class="fa-solid fa-file-pdf" style="color:#dc2626;font-size:20px"></i>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600">Documento PDF anexo</div>
+          <div style="font-size:12px;color:var(--text-3)">Clique para visualizar</div>
+        </div>
+        <a href="/api/policies/${p.id}/pdf" target="_blank" class="btn-primary" style="text-decoration:none;font-size:13px">
+          <i class="fa-solid fa-external-link"></i> Abrir PDF
+        </a>
+      </div>` : ''}
+    <div style="margin-top:16px;font-size:12px;color:var(--text-3)">
+      Criado em ${fmtDate(p.created_at)}${p.updated_at ? ' · Atualizado em ' + fmtDate(p.updated_at) : ''}
+    </div>
+  `);
+}
+
+function openNewPolicy() {
+  openModal('Nova Política', `
+    <div class="form-group"><label>Título *</label><input type="text" id="pol-title" placeholder="Ex: Política de Férias"></div>
+    <div class="form-group"><label>Categoria *</label><select id="pol-category">
+      <option value="RH">RH</option>
+      <option value="Financeiro">Financeiro</option>
+      <option value="TI">TI</option>
+      <option value="Compliance">Compliance</option>
+      <option value="Operacional">Operacional</option>
+      <option value="Geral">Geral</option>
+    </select></div>
+    <div class="form-group"><label>Descrição</label><textarea id="pol-content" style="min-height:140px" placeholder="Descreva o conteúdo da política..."></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Status</label><select id="pol-status">
+        <option value="ativa">Ativa</option>
+        <option value="inativa">Inativa</option>
+      </select></div>
+      <div class="form-group"><label>Prioridade</label><select id="pol-priority">
+        <option value="alta">🔴 Alta</option>
+        <option value="media" selected>🟡 Média</option>
+        <option value="baixa">🟢 Baixa</option>
+      </select></div>
+    </div>
+    <div class="form-group"><label>Arquivo PDF (opcional)</label><input type="file" id="pol-pdf" accept=".pdf"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveNewPolicy()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  `);
+}
+
+async function saveNewPolicy() {
+  const title = document.getElementById('pol-title')?.value?.trim();
+  const category = document.getElementById('pol-category')?.value;
+  if (!title) { showToast('Título obrigatório', 'error'); return; }
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('category', category);
+  formData.append('content', document.getElementById('pol-content')?.value || '');
+  formData.append('status', document.getElementById('pol-status')?.value || 'ativa');
+  formData.append('priority', document.getElementById('pol-priority')?.value || 'media');
+  const pdfFile = document.getElementById('pol-pdf')?.files[0];
+  if (pdfFile) formData.append('pdf', pdfFile);
+  const res = await fetch('/api/policies', {
+    method: 'POST',
+    body: formData,
+    credentials: 'include'
+  });
+  const data = await res.json();
+  if (res.ok) { closeModal(); showToast('Política criada!'); navigate('rh-politicas'); }
+  else showToast(data.error || 'Erro ao salvar', 'error');
+}
+
+async function openEditPolicy(id) {
+  const p = await api.get('/policies/' + id);
+  if (!p) return;
+  openModal('Editar Política', `
+    <div class="form-group"><label>Título *</label><input type="text" id="pol-title" value="${p.title.replace(/"/g,'&quot;')}"></div>
+    <div class="form-group"><label>Categoria *</label><select id="pol-category">
+      <option value="RH" ${p.category==='RH'?'selected':''}>RH</option>
+      <option value="Financeiro" ${p.category==='Financeiro'?'selected':''}>Financeiro</option>
+      <option value="TI" ${p.category==='TI'?'selected':''}>TI</option>
+      <option value="Compliance" ${p.category==='Compliance'?'selected':''}>Compliance</option>
+      <option value="Operacional" ${p.category==='Operacional'?'selected':''}>Operacional</option>
+      <option value="Geral" ${p.category==='Geral'?'selected':''}>Geral</option>
+    </select></div>
+    <div class="form-group"><label>Descrição</label><textarea id="pol-content" style="min-height:140px">${p.content || ''}</textarea></div>
+    <div class="form-group"><label>${p.pdf_filename ? 'Substituir PDF (opcional)' : 'Arquivo PDF (opcional)'}</label>
+      ${p.pdf_filename ? `<div style="margin-bottom:8px;font-size:12px;color:var(--text-3)"><i class="fa-solid fa-file-pdf" style="color:#dc2626"></i> PDF já anexado — envie outro para substituir</div>` : ''}
+      <input type="file" id="pol-pdf" accept=".pdf">
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Status</label><select id="pol-status">
+        <option value="ativa" ${p.status === 'ativa' ? 'selected' : ''}>Ativa</option>
+        <option value="inativa" ${p.status === 'inativa' ? 'selected' : ''}>Inativa</option>
+      </select></div>
+      <div class="form-group"><label>Prioridade</label><select id="pol-priority">
+        <option value="alta" ${p.priority === 'alta' ? 'selected' : ''}>🔴 Alta</option>
+        <option value="media" ${p.priority === 'media' ? 'selected' : ''}>🟡 Média</option>
+        <option value="baixa" ${p.priority === 'baixa' ? 'selected' : ''}>🟢 Baixa</option>
+      </select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveEditPolicy('${id}')"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  `);
+}
+
+async function saveEditPolicy(id) {
+  const title = document.getElementById('pol-title')?.value?.trim();
+  const category = document.getElementById('pol-category')?.value;
+  if (!title) { showToast('Título obrigatório', 'error'); return; }
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('category', category);
+  formData.append('content', document.getElementById('pol-content')?.value || '');
+  formData.append('status', document.getElementById('pol-status')?.value || 'ativa');
+  formData.append('priority', document.getElementById('pol-priority')?.value || 'media');
+  const pdfFile = document.getElementById('pol-pdf')?.files[0];
+  if (pdfFile) formData.append('pdf', pdfFile);
+  const res = await fetch('/api/policies/' + id, {
+    method: 'PUT',
+    body: formData,
+    credentials: 'include'
+  });
+  const data = await res.json();
+  if (res.ok) { closeModal(); showToast('Política atualizada!'); navigate('rh-politicas'); }
+  else showToast(data.error || 'Erro ao salvar', 'error');
+}
+
+async function deletePolicy(id) {
+  if (!confirm('Excluir esta política? Esta ação não pode ser desfeita.')) return;
+  const res = await api.delete('/policies/' + id);
+  if (res) { showToast('Política excluída'); navigate('rh-politicas'); }
+}

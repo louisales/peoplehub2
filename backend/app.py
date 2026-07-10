@@ -271,6 +271,18 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS policies (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            category TEXT NOT NULL,
+            content TEXT,
+            pdf_filename TEXT,
+            created_by TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP
+        )
+    """)
 
     # Seed admin user
     c.execute("SELECT id FROM users WHERE email = 'admin@empresa.com'")
@@ -1348,6 +1360,160 @@ def add_career(emp_id):
     conn.close()
     return jsonify({'success': True, 'id': rec_id})
 
+
+# ── POLÍTICAS DE EMPRESA ─────────────────────────────────────────────────────
+@app.route('/api/policies', methods=['GET'])
+@login_required
+def get_policies():
+    conn = get_db()
+    c = conn.cursor()
+    if session.get('user_role') == 'admin':
+        c.execute("SELECT id, title, category, content, pdf_filename, created_by, created_at, updated_at, status, priority FROM policies ORDER BY category, title")
+    else:
+        c.execute("SELECT id, title, category, content, pdf_filename, created_by, created_at, updated_at, status, priority FROM policies WHERE status = 'ativa' ORDER BY category, title")
+    policies = rows_to_list(c.fetchall(), c)
+    conn.close()
+    return jsonify(policies)
+
+@app.route('/api/policies', methods=['POST'])
+@login_required
+def create_policy():
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    title = request.form.get('title', '').strip()
+    category = request.form.get('category', '').strip()
+    content = request.form.get('content', '').strip()
+    status = request.form.get('status', 'ativa')
+    priority = request.form.get('priority', 'media')
+    if not title or not category:
+        return jsonify({'error': 'Título e categoria são obrigatórios'}), 400
+    pdf_filename = None
+    if 'pdf' in request.files:
+        pdf = request.files['pdf']
+        if pdf.filename:
+            ext = os.path.splitext(pdf.filename)[1].lower()
+            if ext != '.pdf':
+                return jsonify({'error': 'Apenas arquivos PDF são permitidos'}), 400
+            pdf_filename = str(uuid.uuid4()) + '.pdf'
+            pdf.save(os.path.join('/var/www/valore-RH/uploads', pdf_filename))
+    policy_id = str(uuid.uuid4())
+    conn = get_db()
+    c = conn.cursor()
+    try:
+        c.execute(
+            "INSERT INTO policies (id, title, category, content, pdf_filename, created_by, created_at, status, priority) VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s, %s)",
+            (policy_id, title, category, content, pdf_filename, session.get('user_id'), status, priority)
+        )
+        conn.commit()
+        log_action(session.get('user_id'), 'create_policy', policy_id, f'Política criada: {title}')
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+    conn.close()
+    return jsonify({'success': True, 'id': policy_id})
+
+@app.route('/api/policies/<policy_id>', methods=['GET'])
+@login_required
+def get_policy(policy_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT id, title, category, content, pdf_filename, created_by, created_at, updated_at, status, priority FROM policies WHERE id = %s", (policy_id,))
+    row = c.fetchone()
+    policy = row_to_dict(row, c) if row else None
+    conn.close()
+    if not policy:
+        return jsonify({'error': 'Política não encontrada'}), 404
+    return jsonify(policy)
+
+@app.route('/api/policies/<policy_id>', methods=['PUT'])
+@login_required
+def update_policy(policy_id):
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    title = request.form.get('title', '').strip()
+    category = request.form.get('category', '').strip()
+    content = request.form.get('content', '').strip()
+    status = request.form.get('status', 'ativa')
+    priority = request.form.get('priority', 'media')
+    if not title or not category:
+        return jsonify({'error': 'Título e categoria são obrigatórios'}), 400
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT pdf_filename FROM policies WHERE id = %s", (policy_id,))
+    row = c.fetchone()
+    existing = row_to_dict(row, c) if row else None
+    if not existing:
+        conn.close()
+        return jsonify({'error': 'Política não encontrada'}), 404
+    pdf_filename = existing.get('pdf_filename')
+    if 'pdf' in request.files:
+        pdf = request.files['pdf']
+        if pdf.filename:
+            ext = os.path.splitext(pdf.filename)[1].lower()
+            if ext != '.pdf':
+                conn.close()
+                return jsonify({'error': 'Apenas arquivos PDF são permitidos'}), 400
+            if pdf_filename:
+                old_path = os.path.join('/var/www/valore-RH/uploads', pdf_filename)
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            pdf_filename = str(uuid.uuid4()) + '.pdf'
+            pdf.save(os.path.join('/var/www/valore-RH/uploads', pdf_filename))
+    try:
+        c.execute(
+            "UPDATE policies SET title=%s, category=%s, content=%s, pdf_filename=%s, status=%s, priority=%s, updated_at=NOW() WHERE id=%s",
+            (title, category, content, pdf_filename, status, priority, policy_id)
+        )
+        conn.commit()
+        log_action(session.get('user_id'), 'update_policy', policy_id, f'Política editada: {title}')
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+    conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/policies/<policy_id>', methods=['DELETE'])
+@login_required
+def delete_policy(policy_id):
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT pdf_filename FROM policies WHERE id = %s", (policy_id,))
+    row = c.fetchone()
+    existing = row_to_dict(row, c) if row else None
+    if not existing:
+        conn.close()
+        return jsonify({'error': 'Política não encontrada'}), 404
+    if existing.get('pdf_filename'):
+        pdf_path = os.path.join('/var/www/valore-RH/uploads', existing['pdf_filename'])
+        if os.path.exists(pdf_path):
+            os.remove(pdf_path)
+    try:
+        c.execute("DELETE FROM policies WHERE id = %s", (policy_id,))
+        conn.commit()
+        log_action(session.get('user_id'), 'delete_policy', policy_id, 'Política excluída')
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+    conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/policies/<policy_id>/pdf', methods=['GET'])
+@login_required
+def get_policy_pdf(policy_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT pdf_filename, title FROM policies WHERE id = %s", (policy_id,))
+    row = c.fetchone()
+    policy = row_to_dict(row, c) if row else None
+    conn.close()
+    if not policy or not policy.get('pdf_filename'):
+        return jsonify({'error': 'PDF não encontrado'}), 404
+    return send_from_directory('/var/www/valore-RH/uploads', policy['pdf_filename'], as_attachment=False)
 
 # ── SERVE FRONTEND ────────────────────────────────────────────────────────────
 @app.route('/', defaults={'path': ''})
