@@ -296,12 +296,7 @@ const routes = {
     ]},
     {key:'description',label:'Descrição',type:'textarea'},
   ]}),
-  'rh-politicas': genericListPage({ icon:'fa-book', title:'Políticas de Empresa', area:'rh', module:'politicas', emptyText:'Documente as políticas e diretrizes da empresa.', fields:[
-    {key:'title',label:'Nome da política *'},
-    {key:'version',label:'Versão',placeholder:'Ex: v2.1'},
-    {key:'summary',label:'Resumo',type:'textarea'},
-    {key:'scope',label:'Abrangência',placeholder:'Ex: Toda a empresa'},
-  ]}),
+  'rh-politicas': renderPoliticas,
   // Cultura
   'cultura-referencia': genericListPage({ icon:'fa-user-plus', title:'Programa de Referência', area:'cultura', module:'referencia', emptyText:'Gerencie indicações de candidatos por colaboradores.', fields:[
     {key:'title',label:'Indicação *',placeholder:'Ex: João indicou Maria para Dev Senior'},
