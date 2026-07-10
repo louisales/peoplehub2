@@ -1,26 +1,26 @@
 
 function getDeptIcon(dept) {
   const icons = {
-    'Contábil':              { icon: 'fa-calculator',        color: '#3b82f6', bg: '#dbeafe' },
-    'Contabil':              { icon: 'fa-calculator',        color: '#3b82f6', bg: '#dbeafe' },
-    'Fiscal':                { icon: 'fa-file-invoice-dollar', color: '#f59e0b', bg: '#fef3c7' },
-    'Financeiro':            { icon: 'fa-coins',             color: '#10b981', bg: '#d1fae5' },
+    'Contábil':              { icon: 'fa-calculator',        color: '#1d4ed8', bg: '#dbeafe' },
+    'Contabil':              { icon: 'fa-calculator',        color: '#1d4ed8', bg: '#dbeafe' },
+    'Fiscal':                { icon: 'fa-file-invoice-dollar', color: '#b45309', bg: '#fef3c7' },
+    'Financeiro':            { icon: 'fa-coins',             color: '#047857', bg: '#d1fae5' },
     'BPO Financeiro':        { icon: 'fa-building-columns',  color: '#6366f1', bg: '#e0e7ff' },
-    'Departamento Pessoal':  { icon: 'fa-id-card',           color: '#ec4899', bg: '#fce7f3' },
-    'RH':                    { icon: 'fa-people-group',      color: '#8b5cf6', bg: '#ede9fe' },
+    'Departamento Pessoal':  { icon: 'fa-id-card',           color: '#be185d', bg: '#fce7f3' },
+    'RH':                    { icon: 'fa-people-group',      color: '#7c3aed', bg: '#ede9fe' },
     'Recursos Humanos':      { icon: 'fa-people-group',      color: '#8b5cf6', bg: '#ede9fe' },
-    'Tecnologia':            { icon: 'fa-microchip',         color: '#0ea5e9', bg: '#e0f2fe' },
+    'Tecnologia':            { icon: 'fa-microchip',         color: '#0369a1', bg: '#e0f2fe' },
     'TI':                    { icon: 'fa-microchip',         color: '#0ea5e9', bg: '#e0f2fe' },
-    'Marketing':             { icon: 'fa-bullhorn',          color: '#f97316', bg: '#ffedd5' },
-    'Comercial':             { icon: 'fa-handshake',         color: '#14b8a6', bg: '#ccfbf1' },
+    'Marketing':             { icon: 'fa-bullhorn',          color: '#c2410c', bg: '#ffedd5' },
+    'Comercial':             { icon: 'fa-handshake',         color: '#0f766e', bg: '#ccfbf1' },
     'Vendas':                { icon: 'fa-chart-line',        color: '#22c55e', bg: '#dcfce7' },
-    'Sucesso do Cliente':    { icon: 'fa-star',              color: '#eab308', bg: '#fef9c3' },
-    'Diretoria':             { icon: 'fa-crown',             color: '#7c3aed', bg: '#ede9fe' },
-    'Operações':             { icon: 'fa-gears',             color: '#64748b', bg: '#f1f5f9' },
-    'Administrativo':        { icon: 'fa-briefcase',         color: '#94a3b8', bg: '#f1f5f9' },
-    'Paralegal':             { icon: 'fa-scale-balanced',    color: '#475569', bg: '#e2e8f0' },
-    'Consultoria':           { icon: 'fa-lightbulb',          color: '#0891b2', bg: '#e0f2fe' },
-    'Jurídico':              { icon: 'fa-gavel',             color: '#dc2626', bg: '#fee2e2' },
+    'Sucesso do Cliente':    { icon: 'fa-star',              color: '#a16207', bg: '#fef9c3' },
+    'Diretoria':             { icon: 'fa-crown',             color: '#5b21b6', bg: '#ede9fe' },
+    'Operações':             { icon: 'fa-gears',             color: '#0369a1', bg: '#e0f2fe' },
+    'Administrativo':        { icon: 'fa-briefcase',         color: '#1e40af', bg: '#e0e7ff' },
+    'Paralegal':             { icon: 'fa-scale-balanced',    color: '#92400e', bg: '#fef3c7' },
+    'Consultoria':           { icon: 'fa-lightbulb',          color: '#0e7490', bg: '#cffafe' },
+    'Jurídico':              { icon: 'fa-gavel',             color: '#b91c1c', bg: '#fee2e2' },
   };
   return icons[dept] || { icon: 'fa-building', color: '#7c3aed', bg: '#ede9fe' };
 }
@@ -188,8 +188,8 @@ async function renderColaboradores() {
       </div>
     </div>
     <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 20px;display:flex;align-items:center;gap:12px;min-width:160px">
-      <div style="width:40px;height:40px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center">
-        <i class="fa-solid fa-circle-check" style="color:#2563eb;font-size:16px"></i>
+      <div style="width:40px;height:40px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center">
+        <i class="fa-solid fa-circle-check" style="color:#16a34a;font-size:16px"></i>
       </div>
       <div>
         <div style="font-size:22px;font-weight:700;color:#16a34a">${totalAtivos}</div>
@@ -197,8 +197,8 @@ async function renderColaboradores() {
       </div>
     </div>
     <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 20px;display:flex;align-items:center;gap:12px;min-width:160px">
-      <div style="width:40px;height:40px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center">
-        <i class="fa-solid fa-heart" style="color:#2563eb;font-size:16px"></i>
+      <div style="width:40px;height:40px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center">
+        <i class="fa-solid fa-heart" style="color:#dc2626;font-size:16px"></i>
       </div>
       <div>
         <div style="font-size:22px;font-weight:700;color:#ca8a04">${totalPais}</div>
