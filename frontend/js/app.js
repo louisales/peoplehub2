@@ -68,8 +68,6 @@ function showLoginPage() {
   document.getElementById('login-page').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   _currentUser = null;
-  document.getElementById('login-email').value = '';
-  document.getElementById('login-password').value = '';
 }
 
 
@@ -82,7 +80,6 @@ function showForgotPassword() {
 
 function showLoginCard() {
   document.getElementById('card-forgot').style.display = 'none';
-  document.getElementById('card-reset').style.display = 'none';
   document.getElementById('card-login').style.display = 'block';
 }
 
@@ -234,7 +231,7 @@ async function handleLogin(e) {
 
 async function handleLogout() {
   await api.post('/auth/logout');
-  window.location.href = '/?t=' + Date.now();
+  showLoginPage();
   showToast('Sessão encerrada', 'info');
 }
 
@@ -329,7 +326,7 @@ const routes = {
 
 async function navigate(page) {
   // Controle de acesso por perfil
-  const devPages = ['dev-pesquisas','dev-avaliacao','dev-aprendizado','dev-pdv'];
+  const devPages = ['dev-pesquisas','dev-avaliacao','dev-aprendizado','dev-pdv','dev-pdi360','dev-disc-perfis'];
   const adminPages = ['settings'];
   if (devPages.includes(page) && !userCan('view_dev')) {
     document.getElementById('page-content').innerHTML = `

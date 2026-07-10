@@ -1,26 +1,25 @@
 
 function getDeptIcon(dept) {
   const icons = {
-    'Contábil':              { icon: 'fa-calculator',        color: '#1d4ed8', bg: '#dbeafe' },
-    'Contabil':              { icon: 'fa-calculator',        color: '#1d4ed8', bg: '#dbeafe' },
-    'Fiscal':                { icon: 'fa-file-invoice-dollar', color: '#b45309', bg: '#fef3c7' },
-    'Financeiro':            { icon: 'fa-coins',             color: '#047857', bg: '#d1fae5' },
+    'Contábil':              { icon: 'fa-calculator',        color: '#3b82f6', bg: '#dbeafe' },
+    'Contabil':              { icon: 'fa-calculator',        color: '#3b82f6', bg: '#dbeafe' },
+    'Fiscal':                { icon: 'fa-file-invoice-dollar', color: '#f59e0b', bg: '#fef3c7' },
+    'Financeiro':            { icon: 'fa-coins',             color: '#10b981', bg: '#d1fae5' },
     'BPO Financeiro':        { icon: 'fa-building-columns',  color: '#6366f1', bg: '#e0e7ff' },
-    'Departamento Pessoal':  { icon: 'fa-id-card',           color: '#be185d', bg: '#fce7f3' },
-    'RH':                    { icon: 'fa-people-group',      color: '#7c3aed', bg: '#ede9fe' },
+    'Departamento Pessoal':  { icon: 'fa-id-card',           color: '#ec4899', bg: '#fce7f3' },
+    'RH':                    { icon: 'fa-people-group',      color: '#8b5cf6', bg: '#ede9fe' },
     'Recursos Humanos':      { icon: 'fa-people-group',      color: '#8b5cf6', bg: '#ede9fe' },
-    'Tecnologia':            { icon: 'fa-microchip',         color: '#0369a1', bg: '#e0f2fe' },
+    'Tecnologia':            { icon: 'fa-microchip',         color: '#0ea5e9', bg: '#e0f2fe' },
     'TI':                    { icon: 'fa-microchip',         color: '#0ea5e9', bg: '#e0f2fe' },
-    'Marketing':             { icon: 'fa-bullhorn',          color: '#c2410c', bg: '#ffedd5' },
-    'Comercial':             { icon: 'fa-handshake',         color: '#0f766e', bg: '#ccfbf1' },
+    'Marketing':             { icon: 'fa-bullhorn',          color: '#f97316', bg: '#ffedd5' },
+    'Comercial':             { icon: 'fa-handshake',         color: '#14b8a6', bg: '#ccfbf1' },
     'Vendas':                { icon: 'fa-chart-line',        color: '#22c55e', bg: '#dcfce7' },
-    'Sucesso do Cliente':    { icon: 'fa-star',              color: '#a16207', bg: '#fef9c3' },
-    'Diretoria':             { icon: 'fa-crown',             color: '#5b21b6', bg: '#ede9fe' },
-    'Operações':             { icon: 'fa-gears',             color: '#0369a1', bg: '#e0f2fe' },
-    'Administrativo':        { icon: 'fa-briefcase',         color: '#1e40af', bg: '#e0e7ff' },
-    'Paralegal':             { icon: 'fa-scale-balanced',    color: '#92400e', bg: '#fef3c7' },
-    'Consultoria':           { icon: 'fa-lightbulb',          color: '#0e7490', bg: '#cffafe' },
-    'Jurídico':              { icon: 'fa-gavel',             color: '#b91c1c', bg: '#fee2e2' },
+    'Sucesso do Cliente':    { icon: 'fa-star',              color: '#eab308', bg: '#fef9c3' },
+    'Diretoria':             { icon: 'fa-crown',             color: '#7c3aed', bg: '#ede9fe' },
+    'Operações':             { icon: 'fa-gears',             color: '#64748b', bg: '#f1f5f9' },
+    'Administrativo':        { icon: 'fa-briefcase',         color: '#94a3b8', bg: '#f1f5f9' },
+    'Paralegal':             { icon: 'fa-scale-balanced',    color: '#475569', bg: '#e2e8f0' },
+    'Jurídico':              { icon: 'fa-gavel',             color: '#dc2626', bg: '#fee2e2' },
   };
   return icons[dept] || { icon: 'fa-building', color: '#7c3aed', bg: '#ede9fe' };
 }
@@ -123,25 +122,7 @@ async function renderDashboard() {
     </div>
   </div>
 
-  <div style="margin-top:20px" class="card">
-    <div class="card-header"><i class="fa-solid fa-bolt" style="color:#f59e0b"></i>Acesso rápido</div>
-    <div class="card-body">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
-        ${[
-          ['rh-colaboradores','fa-id-card','blue','Colaboradores'],
-          ['dev-avaliacao','fa-star-half-stroke','purple','Avaliações'],
-          ['cultura-reconhecimentos','fa-trophy','amber','Reconhecimentos'],
-          ['comm-noticias','fa-bullhorn','green','Notícias'],
-          ['ops-servicos','fa-ticket','pink','Chamados'],
-          ['comm-beneficios','fa-gift','teal','Benefícios'],
-        ].map(([page,icon,color,label]) => `
-          <div onclick="navigate('${page}')" style="cursor:pointer;padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);display:flex;align-items:center;gap:12px;transition:all .18s" onmouseover="this.style.boxShadow='var(--shadow)'" onmouseout="this.style.boxShadow='none'">
-            <div class="stat-icon ${color}" style="width:36px;height:36px;font-size:15px"><i class="fa-solid ${icon}"></i></div>
-            <span style="font-size:13px;font-weight:500">${label}</span>
-          </div>`).join('')}
-      </div>
-    </div>
-  </div>
+
 </div>`;
 }
 
@@ -197,8 +178,8 @@ async function renderColaboradores() {
       </div>
     </div>
     <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 20px;display:flex;align-items:center;gap:12px;min-width:160px">
-      <div style="width:40px;height:40px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center">
-        <i class="fa-solid fa-heart" style="color:#dc2626;font-size:16px"></i>
+      <div style="width:40px;height:40px;border-radius:50%;background:#fef9c3;display:flex;align-items:center;justify-content:center">
+        <i class="fa-solid fa-heart" style="color:#ca8a04;font-size:16px"></i>
       </div>
       <div>
         <div style="font-size:22px;font-weight:700;color:#ca8a04">${totalPais}</div>
@@ -512,7 +493,7 @@ async function loadDiscTab(empId) {
 }
 
 function openAddCareerEvent(empId) {
-  const DEPTS = ['Contábil','Fiscal','Departamento Pessoal','Sucesso do Cliente','Administrativo','Paralegal','Diretoria','Marketing','Tecnologia','Consultoria'];
+  const DEPTS = ['Contábil','Fiscal','Departamento Pessoal','Sucesso do Cliente','Administrativo','Paralegal','Diretoria','Marketing','Tecnologia'];
   const CARGOS = ['Estagiário','Auxiliar','Assistente','Analista Júnior I','Analista Júnior II','Analista Pleno I','Analista Pleno II','Analista Sênior I','Analista Sênior II','Supervisor','Gerente'];
   openModal('Registrar Movimentação', `
     <div class="form-group"><label>Tipo de movimentação</label>
@@ -582,7 +563,6 @@ function openNewEmployee() {
           <option value="Diretoria">Diretoria</option>
           <option value="Marketing">Marketing</option>
           <option value="Tecnologia">Tecnologia</option>
-          <option value="Consultoria">Consultoria</option>
         </select>
       </div>
       <div class="form-group"><label>Cargo</label>
@@ -680,7 +660,6 @@ async function openEditEmployee(id) {
           <option value="Diretoria" ${e.department==='Diretoria'?'selected':''}>Diretoria</option>
           <option value="Marketing" ${e.department==='Marketing'?'selected':''}>Marketing</option>
           <option value="Tecnologia" ${e.department==='Tecnologia'?'selected':''}>Tecnologia</option>
-          <option value="Consultoria" ${e.department==='Consultoria'?'selected':''}>Consultoria</option>
         </select>
       </div>
       <div class="form-group"><label>Cargo</label>
@@ -803,56 +782,6 @@ async function doDeactivate(id) {
   const data = await res.json();
   if (data.success) { closeModal(); _allEmployees = []; showToast('Colaborador inativado'); navigate('rh-colaboradores'); }
   else showToast('Erro ao inativar', 'error');
-}
-
-
-function confirmDeleteEmployee(id) {
-  const nomeEl = document.getElementById('modal-title');
-  const nome = nomeEl ? nomeEl.textContent : 'este colaborador';
-  const body = document.getElementById('modal-body');
-  body.innerHTML = '';
-  const aviso = document.createElement('div');
-  aviso.style.cssText = 'margin-bottom:16px;color:var(--text-2);font-size:13.5px';
-  aviso.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;margin-right:6px"></i><strong>Atencao: esta acao e permanente!</strong>';
-  const info = document.createElement('div');
-  info.style.cssText = 'background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:14px;margin-bottom:16px;font-size:13.5px;color:#991b1b';
-  const strong = document.createElement('strong');
-  strong.style.fontSize = '15px';
-  strong.textContent = nome;
-  info.appendChild(document.createTextNode('Voce esta prestes a excluir permanentemente: '));
-  info.appendChild(strong);
-  const footer = document.createElement('div');
-  footer.className = 'modal-footer';
-  const btnCancel = document.createElement('button');
-  btnCancel.className = 'btn-secondary';
-  btnCancel.textContent = 'Cancelar';
-  btnCancel.onclick = closeModal;
-  const btnConfirm = document.createElement('button');
-  btnConfirm.className = 'btn-danger';
-  btnConfirm.style.background = '#7f1d1d';
-  btnConfirm.innerHTML = '<i class="fa-solid fa-trash"></i> Confirmar Exclusao Permanente';
-  btnConfirm.onclick = () => doDeleteEmployee(id);
-  footer.appendChild(btnCancel);
-  footer.appendChild(btnConfirm);
-  body.appendChild(aviso);
-  body.appendChild(info);
-  body.appendChild(footer);
-}
-
-async function doDeleteEmployee(id) {
-  const res = await fetch('/api/employees/' + id + '/permanent', {
-    method: 'DELETE',
-    credentials: 'include'
-  });
-  const data = await res.json();
-  if (data.success) {
-    closeModal();
-    _allEmployees = [];
-    showToast('Colaborador excluído permanentemente');
-    navigate('rh-colaboradores');
-  } else {
-    showToast(data.error || 'Erro ao excluir', 'error');
-  }
 }
 
 // ─── NOTÍCIAS ─────────────────────────────────────────────────────────────────
@@ -2341,43 +2270,33 @@ async function submitFormTemplate(title, n) {
   if (res) { closeModal(); showToast('Solicitação enviada!'); navigate('ops-formularios'); }
 }
 
-// ── DISC QUESTIONÁRIO (Metodologia de Adjetivos) ─────────────────────────────
-// Banco de palavras mapeadas para cada dimensão DISC. Pontuação por contagem de
-// adjetivos marcados em cada dimensão, normalizada em percentual.
 const DISC_WORDS = [
   { word: "Alegre", dim: "I" }, { word: "Animado", dim: "I" }, { word: "Anti-Social", dim: "C" },
   { word: "Arrogante", dim: "D" }, { word: "Ativo", dim: "D" }, { word: "Audacioso (Ousado)", dim: "D" },
   { word: "Auto-Disciplinado", dim: "C" }, { word: "Auto-Suficiente", dim: "D" },
   { word: "Barulhento", dim: "I" }, { word: "Bem-Humorado", dim: "I" }, { word: "Bem-Quisto", dim: "I" },
-  { word: "Bom Companheiro", dim: "S" }, { word: "Calculista", dim: "C" }, { word: "Calmo", dim: "S" },
-  { word: "Compreensivo", dim: "S" }, { word: "Comunicativo", dim: "I" },
-  { word: "Conservador", dim: "C" }, { word: "Contagiante", dim: "I" }, { word: "Corajoso", dim: "D" },
-  { word: "Crítico", dim: "C" }, { word: "Cumpridor", dim: "C" }, { word: "Decidido", dim: "D" },
-  { word: "Dedicado", dim: "S" }, { word: "Depressivo", dim: "S" },
-  { word: "Desconfiado", dim: "C" }, { word: "Desmotivado", dim: "S" }, { word: "Desorganizado", dim: "I" },
-  { word: "Destacado", dim: "D" }, { word: "Discreto", dim: "C" }, { word: "Eficiente", dim: "C" },
-  { word: "Egocêntrico", dim: "D" }, { word: "Egoísta", dim: "D" },
-  { word: "Empolgante", dim: "I" }, { word: "Enérgico", dim: "D" }, { word: "Entusiasta", dim: "I" },
-  { word: "Equilibrado", dim: "S" }, { word: "Espalhafatoso", dim: "I" }, { word: "Estimulante", dim: "I" },
-  { word: "Exagerado", dim: "I" }, { word: "Exigente", dim: "D" },
-  { word: "Extrovertido", dim: "I" }, { word: "Exuberante", dim: "I" }, { word: "Firme", dim: "D" },
-  { word: "Frio", dim: "C" }, { word: "Habilidoso", dim: "C" }, { word: "Idealista", dim: "I" },
-  { word: "Impaciente", dim: "D" }, { word: "Indeciso", dim: "S" },
-  { word: "Independente", dim: "D" }, { word: "Indisciplinado", dim: "I" }, { word: "Inflexível", dim: "C" },
-  { word: "Influenciador", dim: "I" }, { word: "Ingênuo", dim: "S" }, { word: "Inseguro", dim: "S" },
-  { word: "Insensível", dim: "D" }, { word: "Intolerante", dim: "D" },
-  { word: "Introvertido", dim: "C" }, { word: "Leal", dim: "S" }, { word: "Líder", dim: "D" },
-  { word: "Medroso", dim: "S" }, { word: "Metódico", dim: "C" }, { word: "Minucioso", dim: "C" },
-  { word: "Modesto", dim: "S" }, { word: "Orgulhoso", dim: "D" },
-  { word: "Otimista", dim: "I" }, { word: "Paciente", dim: "S" }, { word: "Perfeccionista", dim: "C" },
-  { word: "Persistente", dim: "D" }, { word: "Pessimista", dim: "C" }, { word: "Popular", dim: "I" },
-  { word: "Prático", dim: "D" }, { word: "Pretensioso", dim: "D" },
-  { word: "Procrastinador", dim: "S" }, { word: "Racional", dim: "C" }, { word: "Reservado", dim: "C" },
-  { word: "Resoluto (Decidido)", dim: "D" }, { word: "Rotineiro", dim: "S" }, { word: "Sarcástico", dim: "D" },
-  { word: "Sensível", dim: "S" }, { word: "Sentimental", dim: "S" },
-  { word: "Simpático", dim: "I" }, { word: "Sincero", dim: "S" }, { word: "Temeroso", dim: "S" },
-  { word: "Teórico", dim: "C" }, { word: "Tranquilo", dim: "S" }, { word: "Vaidoso", dim: "I" },
-  { word: "Vingativo", dim: "D" },
+  { word: "Bonito(a)", dim: "I" }, { word: "Cauteloso", dim: "C" }, { word: "Certinho", dim: "C" },
+  { word: "Corajoso", dim: "D" }, { word: "Criativo", dim: "I" }, { word: "Cuidadoso", dim: "C" },
+  { word: "Decidido", dim: "D" }, { word: "Detalhista", dim: "C" }, { word: "Determinado", dim: "D" },
+  { word: "Diplomático", dim: "S" }, { word: "Direto", dim: "D" }, { word: "Disciplinado", dim: "C" },
+  { word: "Divertido", dim: "I" }, { word: "Eficiente", dim: "D" }, { word: "Empático", dim: "S" },
+  { word: "Enérgico", dim: "D" }, { word: "Entusiasta", dim: "I" }, { word: "Equilibrado", dim: "S" },
+  { word: "Exigente", dim: "D" }, { word: "Fiel", dim: "S" }, { word: "Flexível", dim: "S" },
+  { word: "Gentil", dim: "S" }, { word: "Humilde", dim: "S" }, { word: "Idealista", dim: "I" },
+  { word: "Impaciente", dim: "D" }, { word: "Impulsivo", dim: "D" }, { word: "Independente", dim: "D" },
+  { word: "Indireto", dim: "S" }, { word: "Influente", dim: "I" }, { word: "Leal", dim: "S" },
+  { word: "Lógico", dim: "C" }, { word: "Metódico", dim: "C" }, { word: "Meticuloso", dim: "C" },
+  { word: "Moderado", dim: "S" }, { word: "Objetivo", dim: "D" }, { word: "Observador", dim: "C" },
+  { word: "Obstinado", dim: "D" }, { word: "Organizado", dim: "C" }, { word: "Paciente", dim: "S" },
+  { word: "Perfeccionista", dim: "C" }, { word: "Persistente", dim: "D" }, { word: "Persuasivo", dim: "I" },
+  { word: "Planejador", dim: "C" }, { word: "Pontual", dim: "C" }, { word: "Popular", dim: "I" },
+  { word: "Positivo", dim: "I" }, { word: "Prestativo", dim: "S" }, { word: "Prudente", dim: "C" },
+  { word: "Questionador", dim: "C" }, { word: "Racional", dim: "C" }, { word: "Receptivo", dim: "S" },
+  { word: "Reservado", dim: "C" }, { word: "Resiliente", dim: "S" }, { word: "Responsável", dim: "C" },
+  { word: "Seguro", dim: "D" }, { word: "Sensível", dim: "S" }, { word: "Sério", dim: "C" },
+  { word: "Sincero", dim: "D" }, { word: "Sociável", dim: "I" }, { word: "Solidário", dim: "S" },
+  { word: "Teimoso", dim: "D" }, { word: "Tolerante", dim: "S" }, { word: "Trabalhador", dim: "S" },
+  { word: "Tranquilo", dim: "S" }, { word: "Versátil", dim: "I" }, { word: "Visionário", dim: "I" },
 ];
 
 let _discSelected = [];
@@ -2408,7 +2327,6 @@ function renderDISCWords() {
       color:${selected ? 'var(--primary)' : 'var(--text)'};
       font-weight:${selected ? '600' : '400'};">${w.word}</button>`;
   }).join('');
-
   openModal('Teste DISC — Marque os adjetivos que mais te representam', `
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:4px">
       Marque <strong>todos os adjetivos</strong> que você acredita que mais te representam no ambiente de trabalho. Responda sozinho, com sinceridade, sem ajuda de terceiros.
@@ -2433,12 +2351,10 @@ async function submitDISC() {
     showToast('Selecione pelo menos 8 adjetivos antes de finalizar', 'error');
     return;
   }
-  // Mapeia cada palavra selecionada para sua dimensão DISC correspondente
   const answers = _discSelected.map(word => {
     const found = DISC_WORDS.find(w => w.word === word);
     return found ? found.dim : null;
   }).filter(Boolean);
-
   const res = await api.post('/employees/' + _discEmpId + '/disc', { answers });
   if (res?.success) {
     closeModal();
@@ -3016,12 +2932,11 @@ async function renderDISCPerfis() {
 async function renderPoliticas() {
   const isAdmin = userCan('admin');
   const policies = await api.get('/policies') || [];
-
-  // Agrupa por categoria
   const grouped = {};
   policies.forEach(p => {
-    if (!grouped[p.category]) grouped[p.category] = [];
-    grouped[p.category].push(p);
+    const cat = p.category || 'Geral';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(p);
   });
 
   const categoriaIcons = {
@@ -3034,168 +2949,140 @@ async function renderPoliticas() {
   };
 
   return `
-<div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-book"></i>Políticas de Empresa</div>
-  <div class="page-actions">
-    ${isAdmin ? `<button class="btn-primary" onclick="openNewPolicy()"><i class="fa-solid fa-plus"></i> Nova Política</button>` : ''}
-  </div>
-</div>
-<div class="page-body">
-  ${policies.length === 0 ? `
-    <div class="empty-state">
-      <i class="fa-solid fa-book"></i>
-      <h3>Nenhuma política cadastrada</h3>
-      <p>Documente as políticas e diretrizes da empresa.</p>
-    </div>` :
-    Object.entries(grouped).map(([cat, items]) => `
-      <div style="margin-bottom:28px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-          <i class="fa-solid ${categoriaIcons[cat] || 'fa-folder'}" style="color:var(--primary);font-size:15px"></i>
-          <span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-2)">${cat}</span>
+    <div class="page-header">
+      <div class="page-title"><i class="fa-solid fa-book"></i>Políticas de Empresa</div>
+      <div class="page-actions">
+        ${isAdmin ? `<button class="btn-primary" onclick="openNewPolicy()"><i class="fa-solid fa-plus"></i> Nova Política</button>` : ''}
+      </div>
+    </div>
+    <div class="page-body">
+      ${policies.length === 0 ? `
+        <div class="empty-state">
+          <i class="fa-solid fa-book"></i>
+          <h3>Nenhuma política cadastrada</h3>
+          <p>Documente as políticas e diretrizes da empresa.</p>
         </div>
-        <div class="content-grid">
-          ${items.map(p => `
-            <div class="content-card" style="cursor:pointer" onclick="openViewPolicy('${p.id}')">
-              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-                <div class="content-card-title" style="margin-bottom:6px">${p.title}</div>
-                ${isAdmin ? `
-                  <div style="display:flex;gap:4px;flex-shrink:0">
-                    <button class="btn-icon" title="Editar" onclick="event.stopPropagation();openEditPolicy('${p.id}')"><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn-icon" title="Excluir" onclick="event.stopPropagation();deletePolicy('${p.id}')"><i class="fa-solid fa-trash"></i></button>
+      ` : Object.entries(grouped).map(([cat, items]) => `
+        <div style="margin-bottom:24px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1.5px solid var(--border)">
+            <i class="fa-solid ${categoriaIcons[cat] || 'fa-book'}" style="color:var(--accent);font-size:15px"></i>
+            <span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-2)">${cat}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
+            ${items.map(p => `
+              <div class="card" style="cursor:pointer;transition:box-shadow .15s;padding:16px" onclick="openViewPolicy('${p.id}')">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
+                  <div style="font-size:15px;font-weight:700;color:var(--primary)">${p.title || 'Sem título'}</div>
+                  ${isAdmin ? `<div style="display:flex;gap:6px" onclick="event.stopPropagation()">
+                    <button class="btn-icon" title="Editar" onclick="openEditPolicy('${p.id}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn-icon" title="Excluir" onclick="deletePolicy('${p.id}')"><i class="fa-solid fa-trash"></i></button>
                   </div>` : ''}
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+                  <span class="badge ${p.priority === 'alta' ? 'badge-danger' : p.priority === 'baixa' ? 'badge-success' : 'badge-warning'}">${{alta:'🔴 Alta',media:'🟡 Média',baixa:'🟢 Baixa'}[p.priority] || '🟡 Média'}</span>
+                  <span class="badge ${p.status === 'inativa' ? 'badge-neutral' : 'badge-success'}">${p.status === 'inativa' ? '⚫ Inativa' : '✅ Ativa'}</span>
+                  ${p.pdf_filename ? `<span class="badge badge-info"><i class="fa-solid fa-file-pdf"></i> PDF</span>` : ''}
+                </div>
+                <div style="font-size:11px;color:var(--text-3);margin-top:12px">Criado em ${fmtDate(p.created_at)}</div>
               </div>
-              <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-                ${{alta:'<span style="background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">🔴 Alta</span>',media:'<span style="background:#fef9c3;color:#a16207;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">🟡 Média</span>',baixa:'<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">🟢 Baixa</span>'}[p.priority] || ''}
-                ${p.status === 'inativa' ? '<span style="background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">⚫ Inativa</span>' : '<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">✅ Ativa</span>'}
-              </div>
-              <div class="content-card-meta" style="margin-top:8px">
-                <span><i class="fa-solid fa-calendar" style="margin-right:4px"></i>${fmtDate(p.created_at)}</span>
-                ${p.pdf_filename ? '<span style="color:var(--primary)"><i class="fa-solid fa-file-pdf" style="margin-right:4px"></i>PDF anexo</span>' : ''}
-              </div>
-            </div>`).join('')}
+            `).join('')}
+          </div>
         </div>
-      </div>`).join('')}
-</div>`;
+      `).join('')}
+    </div>
+  `;
 }
 
 async function openViewPolicy(id) {
   const p = await api.get('/policies/' + id);
   if (!p) return;
-  openModal(p.title, `
-    <div style="margin-bottom:12px">
-      <span style="background:var(--primary-light);color:var(--primary);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">${p.category}</span>
-    </div>
-    ${p.content ? `<div style="font-size:14px;line-height:1.7;color:var(--text-1);margin-bottom:16px;white-space:pre-wrap">${p.content}</div>` : ''}
-    ${p.pdf_filename ? `
-      <div style="margin-top:16px;padding:12px 16px;background:var(--surface-2);border-radius:var(--radius);display:flex;align-items:center;gap:10px">
-        <i class="fa-solid fa-file-pdf" style="color:#dc2626;font-size:20px"></i>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:600">Documento PDF anexo</div>
-          <div style="font-size:12px;color:var(--text-3)">Clique para visualizar</div>
-        </div>
-        <a href="/api/policies/${p.id}/pdf" target="_blank" class="btn-primary" style="text-decoration:none;font-size:13px">
-          <i class="fa-solid fa-external-link"></i> Abrir PDF
-        </a>
-      </div>` : ''}
-    <div style="margin-top:16px;font-size:12px;color:var(--text-3)">
-      Criado em ${fmtDate(p.created_at)}${p.updated_at ? ' · Atualizado em ' + fmtDate(p.updated_at) : ''}
+  openModal(p.title || 'Política', `
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="badge">${p.category || 'Geral'}</span>
+        <span class="badge ${p.status === 'inativa' ? 'danger' : 'success'}">${p.status === 'inativa' ? 'Inativa' : 'Ativa'}</span>
+        <span class="badge">${({alta:'Alta',media:'Média',baixa:'Baixa'}[p.priority] || 'Média')}</span>
+      </div>
+      ${p.content ? `<div style="white-space:pre-wrap;line-height:1.7;color:var(--text)">${p.content}</div>` : ''}
+      ${p.pdf_filename ? `<a class="btn-primary" href="/api/policies/${p.id}/pdf" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf"></i> Abrir PDF</a>` : ''}
+      <div style="font-size:12px;color:var(--text-3)">Criado em ${fmtDate(p.created_at)}${p.updated_at ? ' · Atualizado em ' + fmtDate(p.updated_at) : ''}</div>
     </div>
   `);
 }
 
 function openNewPolicy() {
-  openModal('Nova Política', `
-    <div class="form-group"><label>Título *</label><input type="text" id="pol-title" placeholder="Ex: Política de Férias"></div>
-    <div class="form-group"><label>Categoria *</label><select id="pol-category">
-      <option value="RH">RH</option>
-      <option value="Financeiro">Financeiro</option>
-      <option value="TI">TI</option>
-      <option value="Compliance">Compliance</option>
-      <option value="Operacional">Operacional</option>
-      <option value="Geral">Geral</option>
-    </select></div>
-    <div class="form-group"><label>Descrição</label><textarea id="pol-content" style="min-height:140px" placeholder="Descreva o conteúdo da política..."></textarea></div>
-    <div class="form-row">
-      <div class="form-group"><label>Status</label><select id="pol-status">
-        <option value="ativa">Ativa</option>
-        <option value="inativa">Inativa</option>
-      </select></div>
-      <div class="form-group"><label>Prioridade</label><select id="pol-priority">
-        <option value="alta">🔴 Alta</option>
-        <option value="media" selected>🟡 Média</option>
-        <option value="baixa">🟢 Baixa</option>
-      </select></div>
-    </div>
-    <div class="form-group"><label>Arquivo PDF (opcional)</label><input type="file" id="pol-pdf" accept=".pdf"></div>
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
-      <button class="btn-primary" onclick="saveNewPolicy()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
-    </div>
-  `);
-}
-
-async function saveNewPolicy() {
-  const title = document.getElementById('pol-title')?.value?.trim();
-  const category = document.getElementById('pol-category')?.value;
-  if (!title) { showToast('Título obrigatório', 'error'); return; }
-  const formData = new FormData();
-  formData.append('title', title);
-  formData.append('category', category);
-  formData.append('content', document.getElementById('pol-content')?.value || '');
-  formData.append('status', document.getElementById('pol-status')?.value || 'ativa');
-  formData.append('priority', document.getElementById('pol-priority')?.value || 'media');
-  const pdfFile = document.getElementById('pol-pdf')?.files[0];
-  if (pdfFile) formData.append('pdf', pdfFile);
-  const res = await fetch('/api/policies', {
-    method: 'POST',
-    body: formData,
-    credentials: 'include'
-  });
-  const data = await res.json();
-  if (res.ok) { closeModal(); showToast('Política criada!'); navigate('rh-politicas'); }
-  else showToast(data.error || 'Erro ao salvar', 'error');
+  openPolicyForm();
 }
 
 async function openEditPolicy(id) {
   const p = await api.get('/policies/' + id);
   if (!p) return;
-  openModal('Editar Política', `
-    <div class="form-group"><label>Título *</label><input type="text" id="pol-title" value="${p.title.replace(/"/g,'&quot;')}"></div>
-    <div class="form-group"><label>Categoria *</label><select id="pol-category">
-      <option value="RH" ${p.category==='RH'?'selected':''}>RH</option>
-      <option value="Financeiro" ${p.category==='Financeiro'?'selected':''}>Financeiro</option>
-      <option value="TI" ${p.category==='TI'?'selected':''}>TI</option>
-      <option value="Compliance" ${p.category==='Compliance'?'selected':''}>Compliance</option>
-      <option value="Operacional" ${p.category==='Operacional'?'selected':''}>Operacional</option>
-      <option value="Geral" ${p.category==='Geral'?'selected':''}>Geral</option>
-    </select></div>
-    <div class="form-group"><label>Descrição</label><textarea id="pol-content" style="min-height:140px">${p.content || ''}</textarea></div>
-    <div class="form-group"><label>${p.pdf_filename ? 'Substituir PDF (opcional)' : 'Arquivo PDF (opcional)'}</label>
-      ${p.pdf_filename ? `<div style="margin-bottom:8px;font-size:12px;color:var(--text-3)"><i class="fa-solid fa-file-pdf" style="color:#dc2626"></i> PDF já anexado — envie outro para substituir</div>` : ''}
-      <input type="file" id="pol-pdf" accept=".pdf">
+  openPolicyForm(p);
+}
+
+function openPolicyForm(policy = null) {
+  const isEdit = !!policy;
+  openModal(isEdit ? 'Editar Política' : 'Nova Política', `
+    <div class="form-row">
+      <div class="form-group">
+        <label>Título *</label>
+        <input id="pol-title" value="${policy?.title || ''}" placeholder="Ex: Política de Home Office">
+      </div>
+      <div class="form-group">
+        <label>Categoria *</label>
+        <select id="pol-category">
+          ${['RH','Financeiro','TI','Compliance','Operacional','Geral'].map(c => `<option value="${c}" ${policy?.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Descrição</label>
+      <textarea id="pol-content" rows="7" placeholder="Descreva a política...">${policy?.content || ''}</textarea>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Status</label><select id="pol-status">
-        <option value="ativa" ${p.status === 'ativa' ? 'selected' : ''}>Ativa</option>
-        <option value="inativa" ${p.status === 'inativa' ? 'selected' : ''}>Inativa</option>
-      </select></div>
-      <div class="form-group"><label>Prioridade</label><select id="pol-priority">
-        <option value="alta" ${p.priority === 'alta' ? 'selected' : ''}>🔴 Alta</option>
-        <option value="media" ${p.priority === 'media' ? 'selected' : ''}>🟡 Média</option>
-        <option value="baixa" ${p.priority === 'baixa' ? 'selected' : ''}>🟢 Baixa</option>
-      </select></div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="pol-status">
+          <option value="ativa" ${policy?.status !== 'inativa' ? 'selected' : ''}>Ativa</option>
+          <option value="inativa" ${policy?.status === 'inativa' ? 'selected' : ''}>Inativa</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Prioridade</label>
+        <select id="pol-priority">
+          <option value="alta" ${policy?.priority === 'alta' ? 'selected' : ''}>Alta</option>
+          <option value="media" ${!policy?.priority || policy?.priority === 'media' ? 'selected' : ''}>Média</option>
+          <option value="baixa" ${policy?.priority === 'baixa' ? 'selected' : ''}>Baixa</option>
+        </select>
+      </div>
     </div>
-    <div class="modal-footer">
+    <div class="form-group">
+      <label>${policy?.pdf_filename ? 'Substituir PDF (opcional)' : 'Arquivo PDF (opcional)'}</label>
+      <input id="pol-pdf" type="file" accept="application/pdf,.pdf">
+      ${policy?.pdf_filename ? '<small style="color:var(--text-3)">PDF já anexado — envie outro apenas se quiser substituir.</small>' : ''}
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px">
       <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
-      <button class="btn-primary" onclick="saveEditPolicy('${id}')"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+      <button class="btn-primary" onclick="${isEdit ? `saveEditPolicy('${policy.id}')` : 'saveNewPolicy()'}">Salvar</button>
     </div>
-  `);
+  `, 'lg');
+}
+
+async function saveNewPolicy() {
+  await savePolicyRequest('/api/policies', 'POST', 'Política criada!');
 }
 
 async function saveEditPolicy(id) {
+  await savePolicyRequest('/api/policies/' + id, 'PUT', 'Política atualizada!');
+}
+
+async function savePolicyRequest(url, method, successMessage) {
   const title = document.getElementById('pol-title')?.value?.trim();
   const category = document.getElementById('pol-category')?.value;
-  if (!title) { showToast('Título obrigatório', 'error'); return; }
+  if (!title || !category) {
+    showToast('Título e categoria são obrigatórios', 'error');
+    return;
+  }
   const formData = new FormData();
   formData.append('title', title);
   formData.append('category', category);
@@ -3204,18 +3091,23 @@ async function saveEditPolicy(id) {
   formData.append('priority', document.getElementById('pol-priority')?.value || 'media');
   const pdfFile = document.getElementById('pol-pdf')?.files[0];
   if (pdfFile) formData.append('pdf', pdfFile);
-  const res = await fetch('/api/policies/' + id, {
-    method: 'PUT',
-    body: formData,
-    credentials: 'include'
-  });
-  const data = await res.json();
-  if (res.ok) { closeModal(); showToast('Política atualizada!'); navigate('rh-politicas'); }
-  else showToast(data.error || 'Erro ao salvar', 'error');
+
+  const res = await fetch(url, { method, body: formData, credentials: 'include' });
+  const data = await res.json().catch(() => ({}));
+  if (res.ok) {
+    closeModal();
+    showToast(successMessage);
+    navigate('rh-politicas');
+  } else {
+    showToast(data.error || 'Erro ao salvar política', 'error');
+  }
 }
 
 async function deletePolicy(id) {
   if (!confirm('Excluir esta política? Esta ação não pode ser desfeita.')) return;
   const res = await api.delete('/policies/' + id);
-  if (res) { showToast('Política excluída'); navigate('rh-politicas'); }
+  if (res) {
+    showToast('Política excluída');
+    navigate('rh-politicas');
+  }
 }

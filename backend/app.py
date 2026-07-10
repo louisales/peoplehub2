@@ -580,6 +580,13 @@ def dashboard_stats():
                  AND EXTRACT(MONTH FROM birth_date::date) = %s""", (month,))
     birthdays = rows_to_list(c.fetchall(), c)
 
+    c.execute("""SELECT name, admission_date FROM employees
+                 WHERE status='active' AND admission_date IS NOT NULL
+                 AND admission_date != ''
+                 AND EXTRACT(MONTH FROM admission_date::date) = %s
+                 AND EXTRACT(YEAR FROM admission_date::date) < %s""", (month, date.today().year))
+    work_anniversaries = rows_to_list(c.fetchall(), c)
+
     c.execute("SELECT id, title, category, created_at FROM news WHERE published=1 ORDER BY created_at DESC LIMIT 5")
     recent_news = rows_to_list(c.fetchall(), c)
 
@@ -593,6 +600,7 @@ def dashboard_stats():
         'open_requests': open_requests,
         'recognitions': recognitions,
         'birthdays_this_month': birthdays,
+        'work_anniversaries_this_month': work_anniversaries,
         'recent_news': recent_news,
         'dept_counts': dept_counts
     })

@@ -97,16 +97,7 @@ function toggleSubmenu(key) {
 }
 
 function handleLogoClick() {
-  const sidebar = document.getElementById('sidebar');
-  if (sidebar.classList.contains('collapsed')) {
-    // Sidebar fechada → abre
-    sidebar.classList.remove('collapsed');
-    const icon = sidebar.querySelector('.sidebar-toggle i');
-    if (icon) icon.className = 'fa-solid fa-bars';
-  } else {
-    // Sidebar aberta → vai para site Valore
-    window.open('https://www.valore.com.br', '_blank');
-  }
+  window.open('https://www.valore.com.br', '_blank');
 }
 
 function toggleSidebar() {
@@ -129,6 +120,8 @@ function setActiveNav(page) {
     'dev-avaliacao': '[onclick="navigate(\'dev-avaliacao\')"]',
     'dev-aprendizado': '[onclick="navigate(\'dev-aprendizado\')"]',
     'dev-pdv': '[onclick="navigate(\'dev-pdv\')"]',
+    'dev-pdi360': '[onclick="navigate(\'dev-pdi360\')"]',
+    'dev-disc-perfis': '[onclick="navigate(\'dev-disc-perfis\')"]',
     'rh-colaboradores': '[onclick="navigate(\'rh-colaboradores\')"]',
     'rh-admissional': '[onclick="navigate(\'rh-admissional\')"]',
     'rh-onboarding': '[onclick="navigate(\'rh-onboarding\')"]',
