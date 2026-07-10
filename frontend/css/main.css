@@ -4,7 +4,7 @@
 :root {
   /* ── Paleta Valore ─────────────────────────────── */
   --primary: #0a1628;        /* azul escuro Valore */
-  --primary-light: #dde8f7;  /* azul claro para backgrounds */
+  --primary-light: #112240;  /* azul escuro médio */
   --accent: #7c3aed;         /* roxo Valore */
   --accent-hover: #6d28d9;
   --accent-light: #ede9fe;
@@ -528,12 +528,12 @@ body {
   font-size: 18px;
 }
 
-.stat-icon.blue { background: #dbeafe; color: #1d4ed8; border: 1.5px solid #93c5fd; }
-.stat-icon.green { background: #dbeafe; color: #1d4ed8; border: 1.5px solid #93c5fd; }
-.stat-icon.amber { background: #dbeafe; color: #1d4ed8; border: 1.5px solid #93c5fd; }
-.stat-icon.purple { background: #dbeafe; color: #1d4ed8; border: 1.5px solid #93c5fd; }
-.stat-icon.pink { background: #dbeafe; color: #1d4ed8; border: 1.5px solid #93c5fd; }
-.stat-icon.teal { background: #dbeafe; color: #1d4ed8; border: 1.5px solid #93c5fd; }
+.stat-icon.blue { background: #eff6ff; color: #1d4ed8; border: 1.5px solid #bfdbfe; }
+.stat-icon.green { background: #f0fdf4; color: #15803d; border: 1.5px solid #bbf7d0; }
+.stat-icon.amber { background: #fffbeb; color: #b45309; border: 1.5px solid #fde68a; }
+.stat-icon.purple { background: #f5f3ff; color: #6d28d9; border: 1.5px solid #ddd6fe; }
+.stat-icon.pink { background: #fce7f3; color: #9d174d; }
+.stat-icon.teal { background: #ccfbf1; color: #0f766e; }
 
 .stat-value { font-size: 30px; font-weight: 800; line-height: 1; color: var(--text); }
 .stat-label { font-size: 12.5px; color: var(--text-2); margin-top: 5px; font-weight: 500; }
@@ -955,4 +955,203 @@ select {
   :root { --sidebar-w: 180px; }
   .page-body { padding: 16px 18px; }
   .stats-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+}
+
+
+/* ─── PATCH VALORE RH: SIDEBAR PADRÃO AUDITORIA, SEM REMOVER MÓDULOS ─── */
+.sidebar {
+  width: var(--sidebar-w-collapsed);
+  transition: width var(--transition), box-shadow var(--transition);
+  box-shadow: 6px 0 18px rgba(10,22,40,.08);
+}
+
+.sidebar:hover {
+  width: var(--sidebar-w);
+  box-shadow: var(--shadow-lg);
+}
+
+.sidebar-header {
+  border-bottom: 0 !important;
+}
+
+.sidebar-footer {
+  border-top: 0 !important;
+}
+
+.brand-text,
+.nav-item span,
+.nav-arrow,
+.nav-section-label,
+.user-info-sm,
+.btn-logout-below span {
+  transition: opacity var(--transition), visibility var(--transition);
+}
+
+.brand-subtitle-sm {
+  font-size: 11px;
+  line-height: 1.2;
+  color: rgba(255,255,255,.48);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.sidebar-toggle {
+  display: none !important;
+}
+
+/* Estado recolhido */
+.sidebar.collapsed:not(:hover),
+.sidebar:not(:hover) {
+  width: var(--sidebar-w-collapsed);
+}
+
+.sidebar.collapsed:not(:hover) .brand-text,
+.sidebar.collapsed:not(:hover) .nav-item span,
+.sidebar.collapsed:not(:hover) .nav-arrow,
+.sidebar.collapsed:not(:hover) .nav-section-label,
+.sidebar.collapsed:not(:hover) .user-info-sm,
+.sidebar.collapsed:not(:hover) .btn-logout-below span,
+.sidebar:not(:hover) .brand-text,
+.sidebar:not(:hover) .nav-item span,
+.sidebar:not(:hover) .nav-arrow,
+.sidebar:not(:hover) .nav-section-label,
+.sidebar:not(:hover) .user-info-sm,
+.sidebar:not(:hover) .btn-logout-below span {
+  display: none !important;
+}
+
+.sidebar.collapsed:not(:hover) .nav-submenu,
+.sidebar:not(:hover) .nav-submenu {
+  display: none !important;
+}
+
+.sidebar.collapsed:not(:hover) .sidebar-header,
+.sidebar:not(:hover) .sidebar-header {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.sidebar.collapsed:not(:hover) .sidebar-logo-img,
+.sidebar:not(:hover) .sidebar-logo-img {
+  width: 34px;
+  height: 34px;
+  margin: 0 auto;
+}
+
+.sidebar.collapsed:not(:hover) .nav-item,
+.sidebar.collapsed:not(:hover) .nav-sub-item,
+.sidebar:not(:hover) .nav-item,
+.sidebar:not(:hover) .nav-sub-item {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+  gap: 0;
+}
+
+.sidebar.collapsed:not(:hover) .nav-item i:first-child,
+.sidebar.collapsed:not(:hover) .nav-sub-item i:first-child,
+.sidebar:not(:hover) .nav-item i:first-child,
+.sidebar:not(:hover) .nav-sub-item i:first-child {
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+  text-align: center;
+  font-size: 18px;
+}
+
+.sidebar.collapsed:not(:hover) .sidebar-footer,
+.sidebar:not(:hover) .sidebar-footer {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.sidebar.collapsed:not(:hover) .sidebar-user-block,
+.sidebar:not(:hover) .sidebar-user-block {
+  justify-content: center;
+}
+
+.sidebar.collapsed:not(:hover) .btn-logout-below,
+.sidebar:not(:hover) .btn-logout-below {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* Estado expandido ao passar o mouse */
+.sidebar:hover .brand-text,
+.sidebar:hover .nav-item span,
+.sidebar:hover .nav-arrow,
+.sidebar:hover .nav-section-label,
+.sidebar:hover .user-info-sm,
+.sidebar:hover .btn-logout-below span {
+  display: block !important;
+}
+
+.sidebar:hover .sidebar-header {
+  justify-content: flex-start;
+  padding: 18px 16px;
+}
+
+.sidebar:hover .sidebar-logo-img {
+  width: 34px;
+  height: 34px;
+  margin: 0;
+}
+
+.sidebar:hover .nav-item,
+.sidebar:hover .nav-sub-item {
+  justify-content: flex-start;
+}
+
+.sidebar:hover .nav-item i:first-child,
+.sidebar:hover .nav-sub-item i:first-child {
+  width: 18px;
+  min-width: 18px;
+  margin-right: 10px !important;
+  text-align: center;
+}
+
+.sidebar:hover .sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 14px 16px;
+  gap: 8px;
+}
+
+.sidebar-user-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.btn-logout-below {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.main-content {
+  margin-left: var(--sidebar-w-collapsed) !important;
+  transition: margin-left var(--transition);
+}
+
+.sidebar:hover ~ .main-content {
+  margin-left: var(--sidebar-w) !important;
+}
+
+/* Permite que os submenus voltem a aparecer quando a sidebar abre no hover */
+.sidebar:hover .nav-submenu {
+  display: block !important;
 }

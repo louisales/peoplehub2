@@ -19,9 +19,6 @@
     <div class="login-brand">
       <img src="/logo_valore_branco.png" alt="Grupo Valore" class="login-logo">
     </div>
-    <div class="login-visual" style="margin: 28px 0; text-align: center;">
-      <img src="/rede_pessoas.svg" alt="" style="width: 30%; display: block; margin: 0 auto;">
-    </div>
     <div class="login-headline">
       <span class="headline-serif">Pessoas</span> no centro<br>de cada decisão.
     </div>
@@ -41,12 +38,12 @@
       <form id="login-form" onsubmit="handleLogin(event)">
         <div class="form-group">
           <label>E-mail corporativo</label>
-          <input type="email" id="login-email" placeholder="seu@valore.com.br" autocomplete="off" required>
+          <input type="email" id="login-email" placeholder="seu@valore.com.br" required>
         </div>
         <div class="form-group">
           <label>Senha</label>
           <div class="input-with-icon">
-            <input type="password" id="login-password" placeholder="••••••••" autocomplete="new-password" required>
+            <input type="password" id="login-password" placeholder="••••••••" required>
             <button type="button" class="eye-btn" onclick="togglePassword()"><i class="fa-regular fa-eye"></i></button>
           </div>
         </div>
@@ -108,11 +105,12 @@
 <!-- APP SHELL -->
 <div id="app" style="display:none">
   <!-- SIDEBAR -->
-  <aside id="sidebar" class="sidebar">
+  <aside id="sidebar" class="sidebar collapsed">
     <div class="sidebar-header">
       <img src="/logo_purple.png" alt="Valore" class="sidebar-logo-img" id="sidebar-logo" onclick="handleLogoClick()" title="Menu">
       <div class="brand-text">
         <div class="brand-name-sm">Valore RH</div>
+        <div class="brand-subtitle-sm">Gestão de pessoas</div>
       </div>
       <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
     </div>
@@ -131,6 +129,8 @@
         <div class="nav-sub-item" onclick="navigate('dev-avaliacao')"><i class="fa-solid fa-star-half-stroke"></i> Avaliação de Desempenho</div>
         <div class="nav-sub-item" onclick="navigate('dev-aprendizado')"><i class="fa-solid fa-graduation-cap"></i> Aprendizado</div>
         <div class="nav-sub-item" onclick="navigate('dev-pdv')"><i class="fa-solid fa-route"></i> Plano de Desenvolvimento</div>
+        <div class="nav-sub-item" onclick="navigate('dev-pdi360')"><i class="fa-solid fa-bullseye"></i> PDI 360</div>
+        <div class="nav-sub-item" onclick="navigate('dev-disc-perfis')"><i class="fa-solid fa-brain"></i> Perfis DISC</div>
       </div>
 
       <div class="nav-section-label">Recursos Humanos</div>
@@ -183,12 +183,16 @@
     </nav>
 
     <div class="sidebar-footer">
-      <a href="/api/auth/logout" class="btn-logout" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></a>
-      <div class="user-avatar-sm" id="sidebar-avatar" onclick="navigate('settings')" title="Configurações" style="cursor:pointer">A</div>
-      <div class="user-info-sm" onclick="navigate('settings')" style="cursor:pointer">
-        <div id="sidebar-name">Usuário</div>
-        <div id="sidebar-role">Administrador</div>
+      <div class="sidebar-user-block" onclick="navigate('settings')" title="Configurações" style="cursor:pointer">
+        <div class="user-avatar-sm" id="sidebar-avatar">A</div>
+        <div class="user-info-sm">
+          <div id="sidebar-name">Usuário</div>
+          <div id="sidebar-role">Administrador</div>
+        </div>
       </div>
+      <button class="btn-logout btn-logout-below" onclick="handleLogout()" title="Sair">
+        <i class="fa-solid fa-right-from-bracket"></i><span>Sair</span>
+      </button>
     </div>
   </aside>
 
