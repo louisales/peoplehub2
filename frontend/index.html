@@ -121,66 +121,41 @@
         <i class="bi bi-speedometer2"></i><span>Dashboard</span>
       </div>
 
-      <div class="nav-section-label" data-section="dev">Desenvolvimento</div>
-      <div class="nav-item nav-parent" data-section="dev" onclick="toggleSubmenu('dev')">
-        <i class="bi bi-person-workspace"></i><span>Dev. de Talentos</span><i class="bi bi-chevron-down nav-arrow" id="arrow-dev"></i>
-      </div>
-      <div class="nav-submenu" data-section="dev" id="sub-dev">
-        <div class="nav-sub-item" onclick="navigate('dev-pesquisas')"><i class="bi bi-graph-up-arrow"></i> Pesquisas</div>
-        <div class="nav-sub-item" onclick="navigate('dev-avaliacao')"><i class="bi bi-star-half"></i> Avaliação de Desempenho</div>
-        <div class="nav-sub-item" onclick="navigate('dev-aprendizado')"><i class="bi bi-mortarboard"></i> Aprendizado</div>
-        <div class="nav-sub-item" onclick="navigate('dev-pdv')"><i class="bi bi-signpost-split"></i> Plano de Desenvolvimento</div>
-        <div class="nav-sub-item" onclick="navigate('dev-pdi360')"><i class="bi bi-bullseye"></i> PDI 360</div>
-        <div class="nav-sub-item" onclick="navigate('dev-disc-perfis')"><i class="bi bi-diagram-3"></i> Perfis DISC</div>
-      </div>
+      <div class="nav-section-label">Desenvolvimento</div>
+      <div class="nav-item" onclick="navigate('dev-pesquisas')"><i class="bi bi-graph-up-arrow"></i><span>Pesquisas</span></div>
+      <div class="nav-item" onclick="navigate('dev-avaliacao')"><i class="bi bi-star-half"></i><span>Avaliação de Desempenho</span></div>
+      <div class="nav-item" onclick="navigate('dev-aprendizado')"><i class="bi bi-mortarboard"></i><span>Aprendizado</span></div>
+      <div class="nav-item" onclick="navigate('dev-pdv')"><i class="bi bi-signpost-split"></i><span>Plano de Desenvolvimento</span></div>
+      <div class="nav-item" onclick="navigate('dev-pdi360')"><i class="bi bi-bullseye"></i><span>PDI 360</span></div>
+      <div class="nav-item" onclick="navigate('dev-disc-perfis')"><i class="bi bi-diagram-3"></i><span>Perfis DISC</span></div>
 
       <div class="nav-section-label">Recursos Humanos</div>
-      <div class="nav-item nav-parent" onclick="toggleSubmenu('rh')">
-        <i class="bi bi-file-earmark-text"></i><span>Gestão de RH</span><i class="bi bi-chevron-down nav-arrow" id="arrow-rh"></i>
-      </div>
-      <div class="nav-submenu" id="sub-rh">
-        <div class="nav-sub-item" onclick="navigate('rh-colaboradores')"><i class="bi bi-person-vcard"></i> Perfil do Colaborador</div>
-        <div class="nav-sub-item" onclick="navigate('rh-admissional')"><i class="bi bi-file-earmark-plus"></i> Documentos Admissionais</div>
-        <div class="nav-sub-item" onclick="navigate('rh-onboarding')"><i class="bi bi-door-open"></i> Onboarding</div>
-        <div class="nav-sub-item" onclick="navigate('rh-ferias')"><i class="bi bi-umbrella"></i> Férias e Licença</div>
-        <div class="nav-sub-item" onclick="navigate('rh-arquivos')"><i class="bi bi-folder2-open"></i> Arquivos</div>
-        <div class="nav-sub-item" onclick="navigate('rh-politicas')"><i class="bi bi-journal-text"></i> Políticas de Empresa</div>
-      </div>
+      <div class="nav-item" onclick="navigate('rh-colaboradores')"><i class="bi bi-person-vcard"></i><span>Perfil do Colaborador</span></div>
+      <div class="nav-item" onclick="navigate('rh-admissional')"><i class="bi bi-file-earmark-plus"></i><span>Documentos Admissionais</span></div>
+      <div class="nav-item" onclick="navigate('rh-onboarding')"><i class="bi bi-door-open"></i><span>Onboarding</span></div>
+      <div class="nav-item" onclick="navigate('rh-ferias')"><i class="bi bi-umbrella"></i><span>Férias e Licença</span></div>
+      <div class="nav-item" onclick="navigate('rh-arquivos')"><i class="bi bi-folder2-open"></i><span>Arquivos</span></div>
+      <div class="nav-item" onclick="navigate('rh-politicas')"><i class="bi bi-journal-text"></i><span>Políticas de Empresa</span></div>
 
       <div class="nav-section-label">Cultura</div>
-      <div class="nav-item nav-parent" onclick="toggleSubmenu('cultura')">
-        <i class="bi bi-heart"></i><span>Cultura de Empresa</span><i class="bi bi-chevron-down nav-arrow" id="arrow-cultura"></i>
-      </div>
-      <div class="nav-submenu" id="sub-cultura">
-        <div class="nav-sub-item" onclick="navigate('cultura-referencia')"><i class="bi bi-person-plus"></i> Programa de Referência</div>
-        <div class="nav-sub-item" onclick="navigate('cultura-experiencia')"><i class="bi bi-emoji-smile"></i> Experiência de Pessoas</div>
-        <div class="nav-sub-item" onclick="navigate('cultura-aniversarios')"><i class="bi bi-cake2"></i> Aniversários</div>
-        <div class="nav-sub-item" onclick="navigate('cultura-eventos')"><i class="bi bi-calendar-event"></i> Eventos</div>
-        <div class="nav-sub-item" onclick="navigate('cultura-reconhecimentos')"><i class="bi bi-trophy"></i> Reconhecimentos</div>
-      </div>
+      <div class="nav-item" onclick="navigate('cultura-referencia')"><i class="bi bi-person-plus"></i><span>Programa de Referência</span></div>
+      <div class="nav-item" onclick="navigate('cultura-experiencia')"><i class="bi bi-emoji-smile"></i><span>Experiência de Pessoas</span></div>
+      <div class="nav-item" onclick="navigate('cultura-aniversarios')"><i class="bi bi-cake2"></i><span>Aniversários</span></div>
+      <div class="nav-item" onclick="navigate('cultura-eventos')"><i class="bi bi-calendar-event"></i><span>Eventos</span></div>
+      <div class="nav-item" onclick="navigate('cultura-reconhecimentos')"><i class="bi bi-trophy"></i><span>Reconhecimentos</span></div>
 
       <div class="nav-section-label">Comunicação</div>
-      <div class="nav-item nav-parent" onclick="toggleSubmenu('comm')">
-        <i class="bi bi-chat-dots"></i><span>Comunicação Interna</span><i class="bi bi-chevron-down nav-arrow" id="arrow-comm"></i>
-      </div>
-      <div class="nav-submenu" id="sub-comm">
-        <div class="nav-sub-item" onclick="navigate('comm-feed')"><i class="bi bi-newspaper"></i> Feed / Rede Interna</div>
-        <div class="nav-sub-item" onclick="navigate('comm-noticias')"><i class="bi bi-megaphone"></i> Notícias</div>
-        <div class="nav-sub-item" onclick="navigate('comm-organograma')"><i class="bi bi-diagram-2"></i> Organograma</div>
-        <div class="nav-sub-item" onclick="navigate('comm-biblioteca')"><i class="bi bi-bookmark"></i> Biblioteca do Conhecimento</div>
-        <div class="nav-sub-item" onclick="navigate('comm-documentos')"><i class="bi bi-folder2-open"></i> Documentos</div>
-        <div class="nav-sub-item" onclick="navigate('comm-beneficios')"><i class="bi bi-gift"></i> Vantagens e Benefícios</div>
-      </div>
+      <div class="nav-item" onclick="navigate('comm-feed')"><i class="bi bi-newspaper"></i><span>Feed / Rede Interna</span></div>
+      <div class="nav-item" onclick="navigate('comm-noticias')"><i class="bi bi-megaphone"></i><span>Notícias</span></div>
+      <div class="nav-item" onclick="navigate('comm-organograma')"><i class="bi bi-diagram-2"></i><span>Organograma</span></div>
+      <div class="nav-item" onclick="navigate('comm-biblioteca')"><i class="bi bi-bookmark"></i><span>Biblioteca do Conhecimento</span></div>
+      <div class="nav-item" onclick="navigate('comm-documentos')"><i class="bi bi-folder2-open"></i><span>Documentos</span></div>
+      <div class="nav-item" onclick="navigate('comm-beneficios')"><i class="bi bi-gift"></i><span>Vantagens e Benefícios</span></div>
 
       <div class="nav-section-label">Operações</div>
-      <div class="nav-item nav-parent" onclick="toggleSubmenu('ops')">
-        <i class="bi bi-gear"></i><span>Operações</span><i class="bi bi-chevron-down nav-arrow" id="arrow-ops"></i>
-      </div>
-      <div class="nav-submenu" id="sub-ops">
-        <div class="nav-sub-item" onclick="navigate('ops-servicos')"><i class="bi bi-ticket-perforated"></i> Gerenciamento de Serviços</div>
-        <div class="nav-sub-item" onclick="navigate('ops-formularios')"><i class="bi bi-list-check"></i> Formulários e Aprovações</div>
-        <div class="nav-sub-item" onclick="navigate('settings')"><i class="bi bi-person-gear"></i> Gerenciador de Usuários</div>
-      </div>
+      <div class="nav-item" onclick="navigate('ops-servicos')"><i class="bi bi-ticket-perforated"></i><span>Gerenciamento de Serviços</span></div>
+      <div class="nav-item" onclick="navigate('ops-formularios')"><i class="bi bi-list-check"></i><span>Formulários e Aprovações</span></div>
+      <div class="nav-item" onclick="navigate('settings')"><i class="bi bi-person-gear"></i><span>Gerenciador de Usuários</span></div>
     </nav>
 
     <div class="sidebar-footer">
