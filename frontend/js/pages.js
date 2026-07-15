@@ -76,7 +76,7 @@ async function renderDashboard() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-chart-pie"></i>Dashboard</div>
+  <div class="page-title">Dashboard</div>
 </div>
 <div class="page-body">
   <div class="stats-grid">
@@ -140,7 +140,7 @@ async function renderColaboradores() {
 
   const html = `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-id-card"></i>Perfil dos Colaboradores</div>
+  <div class="page-title">Perfil dos Colaboradores</div>
   <div class="page-actions" style="gap:8px">
     <button class="btn-secondary" onclick="exportEmployees()" title="Exportar CSV"><i class="fa-solid fa-file-csv"></i> Exportar</button>
     <button class="btn-secondary" onclick="document.getElementById('import-file').click()" title="Importar planilha"><i class="fa-solid fa-file-arrow-up"></i> Importar</button>
@@ -157,8 +157,8 @@ async function renderColaboradores() {
   <!-- Totalizadores -->
   <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px">
     <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 20px;display:flex;align-items:center;gap:12px;min-width:160px">
-      <div style="width:40px;height:40px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center">
-        <i class="fa-solid fa-users" style="color:var(--primary);font-size:16px"></i>
+      <div style="width:40px;height:40px;border-radius:50%;background:#eff6ff;display:flex;align-items:center;justify-content:center">
+        <i class="fa-solid fa-users" style="color:#1d4ed8;font-size:16px"></i>
       </div>
       <div>
         <div style="font-size:22px;font-weight:700;color:var(--primary)">${employees.length}</div>
@@ -787,7 +787,7 @@ async function renderNoticias() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-bullhorn"></i>Notícias</div>
+  <div class="page-title">Notícias</div>
   <div class="page-actions">
     <button class="btn-primary" onclick="openNewNews()"><i class="fa-solid fa-plus"></i> Nova Notícia</button>
   </div>
@@ -872,7 +872,7 @@ async function renderReconhecimentos() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-trophy"></i>Reconhecimentos</div>
+  <div class="page-title">Reconhecimentos</div>
   <div class="page-actions">
     <button class="btn-primary" onclick="openNewRecognition(${JSON.stringify(emps).replace(/"/g,'&quot;')})"><i class="fa-solid fa-plus"></i> Reconhecer Alguém</button>
   </div>
@@ -952,7 +952,7 @@ async function renderEventos() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-calendar-star"></i>Eventos</div>
+  <div class="page-title">Eventos</div>
   <div class="page-actions">
     <button class="btn-primary" onclick="openNewEvent()"><i class="fa-solid fa-plus"></i> Novo Evento</button>
   </div>
@@ -1026,7 +1026,7 @@ async function renderBeneficios() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-gift"></i>Vantagens e Benefícios</div>
+  <div class="page-title">Vantagens e Benefícios</div>
   <div class="page-actions">
     ${userCan("edit") ? `<button class="btn-primary" onclick="openNewBenefit()"><i class="fa-solid fa-plus"></i> Novo Benefício</button>` : ""}
   </div>
@@ -1101,7 +1101,7 @@ async function renderChamados() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-ticket"></i>Gerenciamento de Serviços</div>
+  <div class="page-title">Gerenciamento de Serviços</div>
   <div class="page-actions">
     <button class="btn-primary" onclick="openNewRequest()"><i class="fa-solid fa-plus"></i> Abrir Chamado</button>
   </div>
@@ -1206,7 +1206,7 @@ async function renderPDV() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-route"></i>Plano de Desenvolvimento</div>
+  <div class="page-title">Plano de Desenvolvimento</div>
   <div class="page-actions" style="gap:8px">
     ${userCan('edit') ? `<button class="btn-primary" onclick="openNewPDV()"><i class="fa-solid fa-plus"></i> Novo PDI</button>` : ''}
   </div>
@@ -1548,7 +1548,7 @@ async function renderDocumentos() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-folder-open"></i>Documentos</div>
+  <div class="page-title">Documentos</div>
   <div class="page-actions">
     ${userCan("edit") ? `<button class="btn-primary" onclick="openUploadDoc()"><i class="fa-solid fa-arrow-up-from-bracket"></i> Enviar Documento</button>` : ""}
   </div>
@@ -1654,7 +1654,7 @@ async function renderBiblioteca() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-book-bookmark"></i>Biblioteca do Conhecimento</div>
+  <div class="page-title">Biblioteca do Conhecimento</div>
   <div class="page-actions">
     <button class="btn-primary" onclick="openNewKnowledge()"><i class="fa-solid fa-plus"></i> Novo Artigo</button>
   </div>
@@ -1787,7 +1787,7 @@ async function renderOrganograma() {
 
   const html = `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-sitemap"></i>Organograma</div>
+  <div class="page-title">Organograma</div>
   <div class="page-actions">
     <div style="display:flex;border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden">
       <button id="btn-org-alfa" onclick="setOrgSort('alfa')" style="padding:7px 14px;border:none;background:var(--primary);color:#fff;cursor:pointer;font-size:13px;font-family:var(--font)"><i class="fa-solid fa-arrow-down-a-z"></i> Alfabética</button>
@@ -1841,7 +1841,7 @@ async function renderAniversarios() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-cake-candles"></i>Aniversários e Comemorações</div>
+  <div class="page-title">Aniversários e Comemorações</div>
 </div>
 <div class="page-body">
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
@@ -1885,7 +1885,7 @@ async function renderAvaliacao() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-star-half-stroke"></i>Avaliação de Desempenho</div>
+  <div class="page-title">Avaliação de Desempenho</div>
   <div class="page-actions">
     <button class="btn-primary" onclick="openNewReview(${JSON.stringify(emps).replace(/"/g,'&quot;')})"><i class="fa-solid fa-plus"></i> Nova Avaliação</button>
   </div>
@@ -1972,7 +1972,7 @@ async function renderSettings() {
   const users = await api.get('/users') || [];
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-gear"></i>Configurações</div>
+  <div class="page-title">Configurações</div>
 </div>
 <div class="page-body">
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
@@ -2145,7 +2145,7 @@ async function renderFeed() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-newspaper"></i>Rede Social Interna</div>
+  <div class="page-title">Rede Social Interna</div>
 </div>
 <div class="page-body">
   <div style="max-width:680px">
@@ -2205,7 +2205,7 @@ async function renderFormularios() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-list-check"></i>Formulários e Aprovações</div>
+  <div class="page-title">Formulários e Aprovações</div>
 </div>
 <div class="page-body">
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-bottom:28px">
@@ -2373,7 +2373,7 @@ async function renderPDI360() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-chart-radar"></i>PDI — Avaliação 360°</div>
+  <div class="page-title">PDI — Avaliação 360°</div>
   ${userCan('edit') ? '<div class="page-actions"><button class="btn-primary" onclick="openNewPDI360()"><i class="fa-solid fa-plus"></i> Nova Avaliação</button></div>' : ''}
 </div>
 <div class="page-body">
@@ -2911,7 +2911,7 @@ async function renderDISCPerfis() {
 
   return `
 <div class="page-header">
-  <div class="page-title"><i class="fa-solid fa-brain"></i>Perfis DISC</div>
+  <div class="page-title">Perfis DISC</div>
 </div>
 <div class="page-body">
   <div style="background:linear-gradient(135deg,#1e40af,#1d4ed8);border-radius:var(--radius);padding:20px;color:#fff;margin-bottom:24px">
@@ -2947,7 +2947,7 @@ async function renderPoliticas() {
 
   return `
     <div class="page-header">
-      <div class="page-title"><i class="fa-solid fa-book"></i>Políticas de Empresa</div>
+      <div class="page-title">Políticas de Empresa</div>
       <div class="page-actions">
         ${isAdmin ? `<button class="btn-primary" onclick="openNewPolicy()"><i class="fa-solid fa-plus"></i> Nova Política</button>` : ''}
       </div>
