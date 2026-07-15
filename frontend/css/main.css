@@ -425,8 +425,9 @@ body {
 .user-info-sm div:last-child { font-size: 11px; color: rgba(255,255,255,.4); }
 
 .btn-logout {
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.1);
+  background: transparent;
+  border: none;
+  box-shadow: none;
   border-radius: 8px;
   color: rgba(255,255,255,.6);
   cursor: pointer;
@@ -437,7 +438,6 @@ body {
 }
 .btn-logout:hover {
   background: rgba(239,68,68,.15);
-  border-color: rgba(239,68,68,.3);
   color: #ef4444;
 }
 
