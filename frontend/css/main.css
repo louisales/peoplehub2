@@ -24,8 +24,8 @@
   --text: #0a1628;
   --text-2: #4a5568;
   --text-3: #8896b0;
-  --sidebar-w: 240px;
-  --sidebar-w-collapsed: 64px;
+  --sidebar-w: 270px;
+  --sidebar-w-collapsed: 76px;
   --header-h: 64px;
   --radius: 10px;
   --radius-lg: 14px;
@@ -1087,11 +1087,15 @@ select {
 /* Estado expandido ao passar o mouse */
 .sidebar:hover .brand-text,
 .sidebar:hover .nav-item span,
-.sidebar:hover .nav-arrow,
 .sidebar:hover .nav-section-label,
 .sidebar:hover .user-info-sm,
 .sidebar:hover .btn-logout-below span {
   display: block !important;
+}
+
+/* Seta de acordeão não é mais necessária: submenus abrem todos juntos no hover */
+.nav-arrow {
+  display: none !important;
 }
 
 .sidebar:hover .sidebar-header {
@@ -1151,7 +1155,8 @@ select {
   margin-left: var(--sidebar-w) !important;
 }
 
-/* Permite que os submenus voltem a aparecer quando a sidebar abre no hover */
+/* Todos os submenus abrem automaticamente ao passar o mouse, sem precisar clicar */
 .sidebar:hover .nav-submenu {
   display: block !important;
+  max-height: 1000px !important;
 }
