@@ -77,9 +77,6 @@ async function renderDashboard() {
   return `
 <div class="page-header">
   <div class="page-title"><i class="fa-solid fa-chart-pie"></i>Dashboard</div>
-  <div style="margin-left:auto;font-size:13px;color:var(--text-2)">
-    <i class="fa-regular fa-calendar" style="margin-right:6px"></i>${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
-  </div>
 </div>
 <div class="page-body">
   <div class="stats-grid">
