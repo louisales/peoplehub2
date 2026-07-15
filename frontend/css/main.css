@@ -1046,7 +1046,17 @@ select {
   justify-content: center;
   padding-left: 0;
   padding-right: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
   gap: 0;
+}
+
+/* Itens que só existem pra abrir submenu não navegam pra lugar nenhum:
+   ficam visíveis recolhida (decorativos), mas somem ao expandir, já que
+   viram uma linha com aparência de botão que não faz nada ao clicar. */
+.sidebar:hover .nav-parent {
+  display: none !important;
 }
 
 .sidebar.collapsed:not(:hover) .nav-item i:first-child,
