@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,500;1,300&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 <link href="/css/main.css" rel="stylesheet">
 </head>
 <body>
@@ -112,73 +113,73 @@
         <div class="brand-name-sm">Valore RH</div>
         <div class="brand-subtitle-sm">Gestão de pessoas</div>
       </div>
-      <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+      <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
     </div>
 
     <nav class="sidebar-nav">
       <div class="nav-item" onclick="navigate('dashboard')">
-        <i class="fa-solid fa-chart-pie"></i><span>Dashboard</span>
+        <i class="bi bi-speedometer2"></i><span>Dashboard</span>
       </div>
 
       <div class="nav-section-label" data-section="dev">Desenvolvimento</div>
       <div class="nav-item nav-parent" data-section="dev" onclick="toggleSubmenu('dev')">
-        <i class="fa-solid fa-users-gear"></i><span>Dev. de Talentos</span><i class="fa-solid fa-chevron-down nav-arrow" id="arrow-dev"></i>
+        <i class="bi bi-person-workspace"></i><span>Dev. de Talentos</span><i class="bi bi-chevron-down nav-arrow" id="arrow-dev"></i>
       </div>
       <div class="nav-submenu" data-section="dev" id="sub-dev">
-        <div class="nav-sub-item" onclick="navigate('dev-pesquisas')"><i class="fa-solid fa-magnifying-glass-chart"></i> Pesquisas</div>
-        <div class="nav-sub-item" onclick="navigate('dev-avaliacao')"><i class="fa-solid fa-star-half-stroke"></i> Avaliação de Desempenho</div>
-        <div class="nav-sub-item" onclick="navigate('dev-aprendizado')"><i class="fa-solid fa-graduation-cap"></i> Aprendizado</div>
-        <div class="nav-sub-item" onclick="navigate('dev-pdv')"><i class="fa-solid fa-route"></i> Plano de Desenvolvimento</div>
-        <div class="nav-sub-item" onclick="navigate('dev-pdi360')"><i class="fa-solid fa-bullseye"></i> PDI 360</div>
-        <div class="nav-sub-item" onclick="navigate('dev-disc-perfis')"><i class="fa-solid fa-brain"></i> Perfis DISC</div>
+        <div class="nav-sub-item" onclick="navigate('dev-pesquisas')"><i class="bi bi-graph-up-arrow"></i> Pesquisas</div>
+        <div class="nav-sub-item" onclick="navigate('dev-avaliacao')"><i class="bi bi-star-half"></i> Avaliação de Desempenho</div>
+        <div class="nav-sub-item" onclick="navigate('dev-aprendizado')"><i class="bi bi-mortarboard"></i> Aprendizado</div>
+        <div class="nav-sub-item" onclick="navigate('dev-pdv')"><i class="bi bi-signpost-split"></i> Plano de Desenvolvimento</div>
+        <div class="nav-sub-item" onclick="navigate('dev-pdi360')"><i class="bi bi-bullseye"></i> PDI 360</div>
+        <div class="nav-sub-item" onclick="navigate('dev-disc-perfis')"><i class="bi bi-diagram-3"></i> Perfis DISC</div>
       </div>
 
       <div class="nav-section-label">Recursos Humanos</div>
       <div class="nav-item nav-parent" onclick="toggleSubmenu('rh')">
-        <i class="fa-solid fa-file-contract"></i><span>Gestão de RH</span><i class="fa-solid fa-chevron-down nav-arrow" id="arrow-rh"></i>
+        <i class="bi bi-file-earmark-text"></i><span>Gestão de RH</span><i class="bi bi-chevron-down nav-arrow" id="arrow-rh"></i>
       </div>
       <div class="nav-submenu" id="sub-rh">
-        <div class="nav-sub-item" onclick="navigate('rh-colaboradores')"><i class="fa-solid fa-id-card"></i> Perfil do Colaborador</div>
-        <div class="nav-sub-item" onclick="navigate('rh-admissional')"><i class="fa-solid fa-file-circle-plus"></i> Documentos Admissionais</div>
-        <div class="nav-sub-item" onclick="navigate('rh-onboarding')"><i class="fa-solid fa-door-open"></i> Onboarding</div>
-        <div class="nav-sub-item" onclick="navigate('rh-ferias')"><i class="fa-solid fa-umbrella-beach"></i> Férias e Licença</div>
-        <div class="nav-sub-item" onclick="navigate('rh-arquivos')"><i class="fa-solid fa-folder-open"></i> Arquivos</div>
-        <div class="nav-sub-item" onclick="navigate('rh-politicas')"><i class="fa-solid fa-book"></i> Políticas de Empresa</div>
+        <div class="nav-sub-item" onclick="navigate('rh-colaboradores')"><i class="bi bi-person-vcard"></i> Perfil do Colaborador</div>
+        <div class="nav-sub-item" onclick="navigate('rh-admissional')"><i class="bi bi-file-earmark-plus"></i> Documentos Admissionais</div>
+        <div class="nav-sub-item" onclick="navigate('rh-onboarding')"><i class="bi bi-door-open"></i> Onboarding</div>
+        <div class="nav-sub-item" onclick="navigate('rh-ferias')"><i class="bi bi-umbrella"></i> Férias e Licença</div>
+        <div class="nav-sub-item" onclick="navigate('rh-arquivos')"><i class="bi bi-folder2-open"></i> Arquivos</div>
+        <div class="nav-sub-item" onclick="navigate('rh-politicas')"><i class="bi bi-journal-text"></i> Políticas de Empresa</div>
       </div>
 
       <div class="nav-section-label">Cultura</div>
       <div class="nav-item nav-parent" onclick="toggleSubmenu('cultura')">
-        <i class="fa-solid fa-heart-pulse"></i><span>Cultura de Empresa</span><i class="fa-solid fa-chevron-down nav-arrow" id="arrow-cultura"></i>
+        <i class="bi bi-heart"></i><span>Cultura de Empresa</span><i class="bi bi-chevron-down nav-arrow" id="arrow-cultura"></i>
       </div>
       <div class="nav-submenu" id="sub-cultura">
-        <div class="nav-sub-item" onclick="navigate('cultura-referencia')"><i class="fa-solid fa-user-plus"></i> Programa de Referência</div>
-        <div class="nav-sub-item" onclick="navigate('cultura-experiencia')"><i class="fa-solid fa-face-smile-beam"></i> Experiência de Pessoas</div>
-        <div class="nav-sub-item" onclick="navigate('cultura-aniversarios')"><i class="fa-solid fa-cake-candles"></i> Aniversários</div>
-        <div class="nav-sub-item" onclick="navigate('cultura-eventos')"><i class="fa-solid fa-calendar-star"></i> Eventos</div>
-        <div class="nav-sub-item" onclick="navigate('cultura-reconhecimentos')"><i class="fa-solid fa-trophy"></i> Reconhecimentos</div>
+        <div class="nav-sub-item" onclick="navigate('cultura-referencia')"><i class="bi bi-person-plus"></i> Programa de Referência</div>
+        <div class="nav-sub-item" onclick="navigate('cultura-experiencia')"><i class="bi bi-emoji-smile"></i> Experiência de Pessoas</div>
+        <div class="nav-sub-item" onclick="navigate('cultura-aniversarios')"><i class="bi bi-cake2"></i> Aniversários</div>
+        <div class="nav-sub-item" onclick="navigate('cultura-eventos')"><i class="bi bi-calendar-event"></i> Eventos</div>
+        <div class="nav-sub-item" onclick="navigate('cultura-reconhecimentos')"><i class="bi bi-trophy"></i> Reconhecimentos</div>
       </div>
 
       <div class="nav-section-label">Comunicação</div>
       <div class="nav-item nav-parent" onclick="toggleSubmenu('comm')">
-        <i class="fa-solid fa-comments"></i><span>Comunicação Interna</span><i class="fa-solid fa-chevron-down nav-arrow" id="arrow-comm"></i>
+        <i class="bi bi-chat-dots"></i><span>Comunicação Interna</span><i class="bi bi-chevron-down nav-arrow" id="arrow-comm"></i>
       </div>
       <div class="nav-submenu" id="sub-comm">
-        <div class="nav-sub-item" onclick="navigate('comm-feed')"><i class="fa-solid fa-newspaper"></i> Feed / Rede Interna</div>
-        <div class="nav-sub-item" onclick="navigate('comm-noticias')"><i class="fa-solid fa-bullhorn"></i> Notícias</div>
-        <div class="nav-sub-item" onclick="navigate('comm-organograma')"><i class="fa-solid fa-sitemap"></i> Organograma</div>
-        <div class="nav-sub-item" onclick="navigate('comm-biblioteca')"><i class="fa-solid fa-book-bookmark"></i> Biblioteca do Conhecimento</div>
-        <div class="nav-sub-item" onclick="navigate('comm-documentos')"><i class="fa-solid fa-folder-open"></i> Documentos</div>
-        <div class="nav-sub-item" onclick="navigate('comm-beneficios')"><i class="fa-solid fa-gift"></i> Vantagens e Benefícios</div>
+        <div class="nav-sub-item" onclick="navigate('comm-feed')"><i class="bi bi-newspaper"></i> Feed / Rede Interna</div>
+        <div class="nav-sub-item" onclick="navigate('comm-noticias')"><i class="bi bi-megaphone"></i> Notícias</div>
+        <div class="nav-sub-item" onclick="navigate('comm-organograma')"><i class="bi bi-diagram-2"></i> Organograma</div>
+        <div class="nav-sub-item" onclick="navigate('comm-biblioteca')"><i class="bi bi-bookmark"></i> Biblioteca do Conhecimento</div>
+        <div class="nav-sub-item" onclick="navigate('comm-documentos')"><i class="bi bi-folder2-open"></i> Documentos</div>
+        <div class="nav-sub-item" onclick="navigate('comm-beneficios')"><i class="bi bi-gift"></i> Vantagens e Benefícios</div>
       </div>
 
       <div class="nav-section-label">Operações</div>
       <div class="nav-item nav-parent" onclick="toggleSubmenu('ops')">
-        <i class="fa-solid fa-gears"></i><span>Operações</span><i class="fa-solid fa-chevron-down nav-arrow" id="arrow-ops"></i>
+        <i class="bi bi-gear"></i><span>Operações</span><i class="bi bi-chevron-down nav-arrow" id="arrow-ops"></i>
       </div>
       <div class="nav-submenu" id="sub-ops">
-        <div class="nav-sub-item" onclick="navigate('ops-servicos')"><i class="fa-solid fa-ticket"></i> Gerenciamento de Serviços</div>
-        <div class="nav-sub-item" onclick="navigate('ops-formularios')"><i class="fa-solid fa-list-check"></i> Formulários e Aprovações</div>
-        <div class="nav-sub-item" onclick="navigate('settings')"><i class="fa-solid fa-users-cog"></i> Gerenciador de Usuários</div>
+        <div class="nav-sub-item" onclick="navigate('ops-servicos')"><i class="bi bi-ticket-perforated"></i> Gerenciamento de Serviços</div>
+        <div class="nav-sub-item" onclick="navigate('ops-formularios')"><i class="bi bi-list-check"></i> Formulários e Aprovações</div>
+        <div class="nav-sub-item" onclick="navigate('settings')"><i class="bi bi-person-gear"></i> Gerenciador de Usuários</div>
       </div>
     </nav>
 
@@ -191,7 +192,7 @@
         </div>
       </div>
       <button class="btn-logout btn-logout-below" onclick="handleLogout()" title="Sair">
-        <i class="fa-solid fa-right-from-bracket"></i><span>Sair</span>
+        <i class="bi bi-box-arrow-right"></i><span>Sair</span>
       </button>
     </div>
   </aside>

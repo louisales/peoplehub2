@@ -106,8 +106,8 @@ function toggleSidebar() {
   const icon = sidebar.querySelector('.sidebar-toggle i');
   if (icon) {
     icon.className = sidebar.classList.contains('collapsed')
-      ? 'fa-solid fa-chevron-right'
-      : 'fa-solid fa-bars';
+      ? 'bi bi-chevron-right'
+      : 'bi bi-list';
   }
 }
 
