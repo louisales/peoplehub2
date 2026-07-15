@@ -373,7 +373,7 @@ body {
 .nav-item.active { color: white; background: rgba(88,101,242,.25); }
 .nav-item.active::before {
   content: '';
-  position: absolute; left: 0; top: 4px; bottom: 4px;
+  position: absolute; left: 0; top: 8px; bottom: 8px;
   width: 3px; background: var(--accent);
   border-radius: 0 3px 3px 0;
 }
@@ -404,7 +404,7 @@ body {
 .nav-sub-item.active { color: #c4b5fd; }
 .nav-sub-item.active::before {
   content: '';
-  position: absolute; left: 0; top: 4px; bottom: 4px;
+  position: absolute; left: 0; top: 8px; bottom: 8px;
   width: 3px; background: var(--accent);
   border-radius: 0 3px 3px 0;
 }
