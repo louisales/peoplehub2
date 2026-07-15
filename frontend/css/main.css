@@ -1171,3 +1171,30 @@ select {
   display: block !important;
   max-height: 1000px !important;
 }
+
+/* Cor de destaque da sidebar (avatar, item ativo/hover) no padrão Valore:
+   laranja, não o roxo usado no resto do app. */
+.sidebar .user-avatar-sm {
+  background: #f28c28;
+}
+
+.sidebar .nav-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar .nav-item.active {
+  background: rgba(255, 255, 255, 0.17);
+}
+
+.sidebar .nav-item.active::before {
+  background: #f28c28;
+}
+
+.sidebar .nav-sub-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar .nav-sub-item.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
