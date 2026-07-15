@@ -292,8 +292,8 @@ body {
 /* ─── SIDEBAR ─────────────────────────────────────────────────────────────── */
 .sidebar {
   width: var(--sidebar-w);
-  background: var(--primary);
-  background-image: linear-gradient(180deg, #112240 0%, #0a1628 100%);
+  background: #0f2d4d;
+  background-image: linear-gradient(180deg, #0f2d4d 0%, #0a1f35 100%);
   display: flex; flex-direction: column;
   position: fixed; left: 0; top: 0; bottom: 0;
   z-index: 100;
@@ -971,11 +971,11 @@ select {
 }
 
 .sidebar-header {
-  border-bottom: 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .sidebar-footer {
-  border-top: 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .brand-text,
@@ -1120,6 +1120,7 @@ select {
   min-width: 18px;
   margin-right: 10px !important;
   text-align: center;
+  font-size: 18px;
 }
 
 .sidebar:hover .sidebar-footer {
