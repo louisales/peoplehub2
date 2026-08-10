@@ -260,6 +260,7 @@ def init_db():
             status TEXT DEFAULT 'active',
             photo TEXT,
             notes TEXT,
+            exit_date TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -466,6 +467,9 @@ def init_db():
     # Dono do registro (quem enviou) — usado para restringir Colaborador a ver
     # somente as próprias solicitações em Formulários (Operações).
     c.execute("ALTER TABLE records ADD COLUMN IF NOT EXISTS created_by_user_id TEXT")
+
+    # Data de saída do colaborador, capturada na inativação.
+    c.execute("ALTER TABLE employees ADD COLUMN IF NOT EXISTS exit_date TEXT")
 
     # Simplificação de perfis: 'rh' e 'gestor' deixam de existir — quem tinha
     # esses perfis passa a ser 'admin' (perfil único de acesso total). Idempotente.
@@ -978,6 +982,17 @@ def dashboard_stats():
     c.execute("SELECT department, COUNT(*) as c FROM employees WHERE status='active' GROUP BY department ORDER BY c DESC")
     dept_counts = rows_to_list(c.fetchall(), c)
 
+    c.execute("SELECT COUNT(*) FROM employees WHERE status='inactive'")
+    inactive_count = c.fetchone()[0]
+
+    current_year = date.today().year
+    c.execute("""SELECT EXTRACT(MONTH FROM exit_date::date)::int as month, COUNT(*) as c
+                 FROM employees
+                 WHERE status='inactive' AND exit_date IS NOT NULL AND exit_date != ''
+                 AND EXTRACT(YEAR FROM exit_date::date) = %s
+                 GROUP BY month ORDER BY month""", (current_year,))
+    inactive_by_month = rows_to_list(c.fetchall(), c)
+
     conn.close()
     return jsonify({
         'employees': employees,
@@ -987,7 +1002,9 @@ def dashboard_stats():
         'birthdays_this_month': birthdays,
         'work_anniversaries_this_month': work_anniversaries,
         'recent_news': recent_news,
-        'dept_counts': dept_counts
+        'dept_counts': dept_counts,
+        'inactive_count': inactive_count,
+        'inactive_by_month_current_year': inactive_by_month
     })
 
 
@@ -1062,11 +1079,12 @@ def update_employee(emp_id):
     c = conn.cursor()
     c.execute("""UPDATE employees SET name=%s, email=%s, department=%s, position=%s, manager=%s,
                  admission_date=%s, birth_date=%s, phone=%s, cpf=%s, status=%s, notes=%s,
-                 is_parent=%s, parent_type=%s, updated_at=CURRENT_TIMESTAMP WHERE id=%s""",
+                 is_parent=%s, parent_type=%s, exit_date=%s, updated_at=CURRENT_TIMESTAMP WHERE id=%s""",
               (data.get('name'), data.get('email'), data.get('department'), data.get('position'),
                data.get('manager'), data.get('admission_date'), data.get('birth_date'),
                data.get('phone'), data.get('cpf'), data.get('status'), data.get('notes'),
-               data.get('is_parent', False), data.get('parent_type', ''), emp_id))
+               data.get('is_parent', False), data.get('parent_type', ''),
+               data.get('exit_date') or None, emp_id))
     conn.commit()
     conn.close()
     return jsonify({'success': True})
@@ -1075,9 +1093,24 @@ def update_employee(emp_id):
 @app.route('/api/employees/<emp_id>', methods=['DELETE'])
 @login_required
 def delete_employee(emp_id):
+    data = request.get_json(silent=True) or {}
+    exit_date = data.get('exit_date')
+    reason = (data.get('notes') or '').strip()
+
     conn = get_db()
     c = conn.cursor()
-    c.execute("UPDATE employees SET status='inactive' WHERE id=%s", (emp_id,))
+
+    notes_suffix = f"Motivo da saída: {reason}" if reason else None
+    if notes_suffix:
+        c.execute("""UPDATE employees SET status='inactive', exit_date=%s,
+                     notes = CASE WHEN notes IS NULL OR notes = '' THEN %s
+                                  ELSE notes || %s END,
+                     updated_at=CURRENT_TIMESTAMP WHERE id=%s""",
+                  (exit_date, notes_suffix, '\n' + notes_suffix, emp_id))
+    else:
+        c.execute("""UPDATE employees SET status='inactive', exit_date=%s,
+                     updated_at=CURRENT_TIMESTAMP WHERE id=%s""",
+                  (exit_date, emp_id))
     conn.commit()
     conn.close()
     return jsonify({'success': True})
@@ -1708,7 +1741,8 @@ def export_employees():
         ('name','Nome'),('email','E-mail'),('department','Departamento'),
         ('position','Cargo'),('manager','Gestor'),('admission_date','Admissao'),
         ('birth_date','Nascimento'),('phone','Telefone'),('cpf','CPF'),
-        ('status','Status'),('is_parent','Pai_Mae'),('parent_type','Tipo_Pai_Mae'),
+        ('status','Status'),('exit_date','Data de Saída'),
+        ('is_parent','Pai_Mae'),('parent_type','Tipo_Pai_Mae'),
         ('notes','Observacoes'),
     ]
     output = _io.StringIO()

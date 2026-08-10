@@ -542,6 +542,7 @@ body {
 .stat-icon.purple { background: #f5f3ff; color: #6d28d9; border: 1.5px solid #ddd6fe; }
 .stat-icon.pink { background: #fce7f3; color: #9d174d; }
 .stat-icon.teal { background: #ccfbf1; color: #0f766e; }
+.stat-icon.red { background: #fef2f2; color: #b91c1c; border: 1.5px solid #fecaca; }
 
 .stat-value { font-size: 30px; font-weight: 800; line-height: 1; color: var(--text); }
 .stat-label { font-size: 12.5px; color: var(--text-2); margin-top: 5px; font-weight: 500; }

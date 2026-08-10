@@ -25,8 +25,11 @@ function getDeptIcon(dept) {
 }
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
+let _dashboardStats = {};
+
 async function renderDashboard() {
   const stats = await api.get('/dashboard/stats') || {};
+  _dashboardStats = stats;
   const deptBars = (stats.dept_counts || []).map(d => {
     const pct = stats.employees ? Math.round((d.c / stats.employees) * 100) : 0;
     return `
@@ -96,6 +99,10 @@ async function renderDashboard() {
       <div class="stat-icon purple"><i class="fa-solid fa-trophy"></i></div>
       <div><div class="stat-value">${stats.recognitions || 0}</div><div class="stat-label">Reconhecimentos</div></div>
     </div>
+    <div class="stat-card" style="cursor:pointer" onclick="openInactiveByMonth()" title="Ver detalhamento por competência">
+      <div class="stat-icon red"><i class="fa-solid fa-user-slash"></i></div>
+      <div><div class="stat-value">${stats.inactive_count || 0}</div><div class="stat-label">Colaboradores Inativos</div></div>
+    </div>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
@@ -121,6 +128,31 @@ async function renderDashboard() {
 
 
 </div>`;
+}
+
+function openInactiveByMonth() {
+  const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const byMonth = {};
+  (_dashboardStats.inactive_by_month_current_year || []).forEach(row => {
+    byMonth[row.month] = row.c;
+  });
+  const year = new Date().getFullYear();
+  const total = Object.values(byMonth).reduce((a, b) => a + b, 0);
+
+  const rows = months.map((month, i) => {
+    const count = byMonth[i + 1] || 0;
+    const isCurrent = i === new Date().getMonth();
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)${isCurrent ? ';background:var(--accent-light)' : ''}">
+        <div style="flex:1;font-size:13px;font-weight:${isCurrent ? '600' : '500'}">${isCurrent ? '🎉 ' : ''}${month}</div>
+        <div style="font-size:14px;font-weight:600;color:${count ? '#b91c1c' : 'var(--text-3)'}">${count}</div>
+      </div>`;
+  }).join('');
+
+  openModal(`Inativações por Competência — ${year}`, `
+    <div style="margin-bottom:12px;color:var(--text-2);font-size:13px">Total de inativações em ${year}: <strong>${total}</strong></div>
+    <div>${rows}</div>
+  `);
 }
 
 // ─── COLABORADORES ────────────────────────────────────────────────────────────
