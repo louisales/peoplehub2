@@ -426,7 +426,7 @@ async function loadDiscTab(empId) {
         <div style="font-size:40px;margin-bottom:8px">📊</div>
         <div style="font-size:14px;font-weight:600;color:var(--text-2);margin-bottom:4px">DISC não aplicado</div>
         <div style="font-size:12px;color:var(--text-3);margin-bottom:16px">Aplique o questionário para ver o perfil comportamental</div>
-        ${userCan('edit') ? '<button class="btn-primary" onclick="openDISC(\''+empId+'\')"><i class="fa-solid fa-clipboard-list"></i> Aplicar DISC</button>' : ''}
+        ${userCan('edit_dev') ? '<button class="btn-primary" onclick="openDISC(\''+empId+'\')"><i class="fa-solid fa-clipboard-list"></i> Aplicar DISC</button>' : ''}
       </div>`;
     return;
   }
@@ -483,7 +483,7 @@ async function loadDiscTab(empId) {
     </div>
     <div style="display:flex;gap:8px;margin-top:4px">
       <button onclick="exportDiscPDF('${empId}')" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:12px;font-family:var(--font);color:var(--text)"><i class="fa-solid fa-file-pdf" style="color:#ef4444"></i> Exportar PDF</button>
-      ${userCan('edit') ? '<button onclick="openDISC(\''+empId+'\')" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:12px;font-family:var(--font);color:var(--text)"><i class="fa-solid fa-redo"></i> Reaplicar</button>' : ''}
+      ${userCan('edit_dev') ? '<button onclick="openDISC(\''+empId+'\')" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:12px;font-family:var(--font);color:var(--text)"><i class="fa-solid fa-redo"></i> Reaplicar</button>' : ''}
     </div>
     <div style="margin-top:8px;font-size:11px;color:var(--text-3);text-align:right">Aplicado em ${fmtDate(disc.created_at)}</div>
   `;
@@ -782,21 +782,24 @@ async function doDeactivate(id) {
 }
 
 // ─── NOTÍCIAS ─────────────────────────────────────────────────────────────────
+let _allNews = [];
+
 async function renderNoticias() {
   const news = await api.get('/news') || [];
+  _allNews = news;
 
   return `
 <div class="page-header">
   <div class="page-title">Notícias</div>
   <div class="page-actions">
-    <button class="btn-primary" onclick="openNewNews()"><i class="fa-solid fa-plus"></i> Nova Notícia</button>
+    ${userCan('admin') ? `<button class="btn-primary" onclick="openNewNews()"><i class="fa-solid fa-plus"></i> Nova Notícia</button>` : ''}
   </div>
 </div>
 <div class="page-body">
   ${news.length === 0 ? '<div class="empty-state"><i class="fa-solid fa-newspaper"></i><h3>Nenhuma notícia</h3><p>Crie o primeiro comunicado.</p></div>' :
   `<div class="content-grid">
     ${news.map(n => `
-      <div class="content-card">
+      <div class="content-card" style="cursor:pointer" onclick="openNoticiaItem('${n.id}')">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div class="content-card-cat">${n.category || 'Geral'}</div>
           <div style="display:flex;gap:6px">
@@ -809,14 +812,34 @@ async function renderNoticias() {
         <div class="content-card-meta">
           <span><i class="fa-solid fa-user" style="margin-right:4px"></i>${n.author}</span>
           <span>${relativeTime(n.created_at)}</span>
-          ${userCan("admin") ? `<button class="btn-icon" style="margin-left:auto" onclick="deleteNews('${n.id}')"><i class="fa-solid fa-trash"></i></button>` : ""}
+          ${userCan("admin") ? `<button class="btn-icon" style="margin-left:auto" onclick="event.stopPropagation();deleteNews('${n.id}')"><i class="fa-solid fa-trash"></i></button>` : ""}
         </div>
       </div>`).join('')}
   </div>`}
 </div>`;
 }
 
-function openNewNews() {
+function openNoticiaItem(id) {
+  const n = _allNews.find(item => item.id === id);
+  if (!n) return;
+  openModal(n.title || 'Notícia', `
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge">${n.category || 'Geral'}</span>
+        ${n.pinned ? '<span class="badge badge-warning">📌 Fixado</span>' : ''}
+        ${statusBadge(n.published ? 'published' : 'draft')}
+      </div>
+      <div style="white-space:pre-wrap;line-height:1.7;color:var(--text)">${n.content || ''}</div>
+      <div style="font-size:12px;color:var(--text-3)">
+        <i class="fa-solid fa-user" style="margin-right:4px"></i>${n.author || 'Sistema'} · ${fmtDate(n.created_at)}
+      </div>
+    </div>
+  `, 'lg');
+}
+
+async function openNewNews() {
+  const departments = await api.get('/departments') || [];
+  const deptOpts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
   openModal('Nova Notícia', `
     <div class="form-group"><label>Título *</label><input type="text" id="nn-title" placeholder="Título da notícia"></div>
     <div class="form-row">
@@ -833,6 +856,12 @@ function openNewNews() {
       </div>
     </div>
     <div class="form-group"><label>Conteúdo</label><textarea id="nn-content" style="min-height:160px" placeholder="Escreva o conteúdo da notícia..."></textarea></div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="nn-all-depts" checked onchange="document.getElementById('nn-depts').disabled = this.checked"> Todos os departamentos
+      </label>
+      <select id="nn-depts" multiple disabled style="min-height:100px;margin-top:8px">${deptOpts}</select>
+    </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
       <button class="btn-primary" onclick="saveNews()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
@@ -843,11 +872,14 @@ function openNewNews() {
 async function saveNews() {
   const title = document.getElementById('nn-title')?.value;
   if (!title) { showToast('Título obrigatório', 'error'); return; }
+  const allDepts = document.getElementById('nn-all-depts')?.checked;
+  const selected = allDepts ? [] : Array.from(document.getElementById('nn-depts')?.selectedOptions || []).map(o => o.value);
   const body = {
     title, content: document.getElementById('nn-content')?.value,
     category: document.getElementById('nn-category')?.value,
     published: document.getElementById('nn-published')?.checked ? 1 : 0,
     pinned: document.getElementById('nn-pinned')?.checked ? 1 : 0,
+    department: allDepts ? 'all' : (selected.join(',') || 'all'),
   };
   const res = await api.post('/news', body);
   if (res) { closeModal(); showToast('Notícia criada!'); navigate('comm-noticias'); }
@@ -874,7 +906,7 @@ async function renderReconhecimentos() {
 <div class="page-header">
   <div class="page-title">Reconhecimentos</div>
   <div class="page-actions">
-    <button class="btn-primary" onclick="openNewRecognition(${JSON.stringify(emps).replace(/"/g,'&quot;')})"><i class="fa-solid fa-plus"></i> Reconhecer Alguém</button>
+    ${userCan('admin') ? `<button class="btn-primary" onclick="openNewRecognition(${JSON.stringify(emps).replace(/"/g,'&quot;')})"><i class="fa-solid fa-plus"></i> Reconhecer Alguém</button>` : ''}
   </div>
 </div>
 <div class="page-body">
@@ -945,16 +977,21 @@ async function saveRecognition() {
 }
 
 // ─── EVENTOS ──────────────────────────────────────────────────────────────────
+let _allEvents = [];
+const EVENT_TYPE_COLORS = { celebration: 'green', training: 'blue', meeting: 'purple', social: 'pink', offsite: 'amber' };
+const EVENT_TYPE_LABELS = { celebration: 'Celebração', training: 'Treinamento', meeting: 'Reunião', social: 'Confraternização', offsite: 'Offsite' };
+
 async function renderEventos() {
   const events = await api.get('/events') || [];
-  const typeColors = { celebration: 'green', training: 'blue', meeting: 'purple', social: 'pink', offsite: 'amber' };
-  const typeLabels = { celebration: 'Celebração', training: 'Treinamento', meeting: 'Reunião', social: 'Confraternização', offsite: 'Offsite' };
+  _allEvents = events;
+  const typeColors = EVENT_TYPE_COLORS;
+  const typeLabels = EVENT_TYPE_LABELS;
 
   return `
 <div class="page-header">
   <div class="page-title">Eventos</div>
   <div class="page-actions">
-    <button class="btn-primary" onclick="openNewEvent()"><i class="fa-solid fa-plus"></i> Novo Evento</button>
+    ${userCan('admin') ? `<button class="btn-primary" onclick="openNewEvent()"><i class="fa-solid fa-plus"></i> Novo Evento</button>` : ''}
   </div>
 </div>
 <div class="page-body">
@@ -963,7 +1000,7 @@ async function renderEventos() {
     ${events.map(e => {
       const tc = typeColors[e.event_type] || 'neutral';
       return `
-      <div class="content-card">
+      <div class="content-card" style="cursor:pointer" onclick="openEventoItem('${e.id}')">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <span class="badge badge-${tc === 'neutral' ? 'neutral' : 'info'}" style="${tc !== 'neutral' && tc !== 'info' ? `background:var(--${tc}-light,var(--info-light))` : ''}">${typeLabels[e.event_type] || e.event_type}</span>
           <span style="font-size:12px;color:var(--text-3)">${fmtDate(e.date)}</span>
@@ -980,7 +1017,26 @@ async function renderEventos() {
 </div>`;
 }
 
-function openNewEvent() {
+function openEventoItem(id) {
+  const e = _allEvents.find(item => item.id === id);
+  if (!e) return;
+  const tc = EVENT_TYPE_COLORS[e.event_type] || 'neutral';
+  openModal(e.title || 'Evento', `
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <span class="badge badge-${tc === 'neutral' ? 'neutral' : 'info'}" style="width:fit-content">${EVENT_TYPE_LABELS[e.event_type] || e.event_type}</span>
+      <div style="white-space:pre-wrap;line-height:1.7;color:var(--text)">${e.description || ''}</div>
+      <div style="font-size:13px;color:var(--text-2);display:flex;flex-direction:column;gap:6px">
+        <span><i class="fa-regular fa-calendar" style="margin-right:6px"></i>${fmtDate(e.date)}</span>
+        ${e.time ? `<span><i class="fa-regular fa-clock" style="margin-right:6px"></i>${e.time}</span>` : ''}
+        ${e.location ? `<span><i class="fa-solid fa-location-dot" style="margin-right:6px"></i>${e.location}</span>` : ''}
+      </div>
+    </div>
+  `);
+}
+
+async function openNewEvent() {
+  const departments = await api.get('/departments') || [];
+  const deptOpts = departments.map(d => `<option value="${d}">${d}</option>`).join('');
   openModal('Novo Evento', `
     <div class="form-group"><label>Título *</label><input type="text" id="nev-title" placeholder="Nome do evento"></div>
     <div class="form-row">
@@ -995,6 +1051,12 @@ function openNewEvent() {
       <div class="form-group"><label>Local</label><input type="text" id="nev-location" placeholder="Sala, link ou endereço"></div>
     </div>
     <div class="form-group"><label>Descrição</label><textarea id="nev-desc" placeholder="Detalhes do evento..."></textarea></div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="nev-all-depts" checked onchange="document.getElementById('nev-depts').disabled = this.checked"> Todos os departamentos
+      </label>
+      <select id="nev-depts" multiple disabled style="min-height:100px;margin-top:8px">${deptOpts}</select>
+    </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
       <button class="btn-primary" onclick="saveEvent()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
@@ -1005,12 +1067,15 @@ function openNewEvent() {
 async function saveEvent() {
   const title = document.getElementById('nev-title')?.value;
   if (!title) { showToast('Título obrigatório', 'error'); return; }
+  const allDepts = document.getElementById('nev-all-depts')?.checked;
+  const selected = allDepts ? [] : Array.from(document.getElementById('nev-depts')?.selectedOptions || []).map(o => o.value);
   const body = {
     title, event_type: document.getElementById('nev-type')?.value,
     date: document.getElementById('nev-date')?.value,
     time: document.getElementById('nev-time')?.value,
     location: document.getElementById('nev-location')?.value,
     description: document.getElementById('nev-desc')?.value,
+    department: allDepts ? 'all' : (selected.join(',') || 'all'),
   };
   const res = await api.post('/events', body);
   if (res) { closeModal(); showToast('Evento criado!'); navigate('cultura-eventos'); }
@@ -1208,7 +1273,7 @@ async function renderPDV() {
 <div class="page-header">
   <div class="page-title">Plano de Desenvolvimento</div>
   <div class="page-actions" style="gap:8px">
-    ${userCan('edit') ? `<button class="btn-primary" onclick="openNewPDV()"><i class="fa-solid fa-plus"></i> Novo PDI</button>` : ''}
+    ${userCan('edit_dev') ? `<button class="btn-primary" onclick="openNewPDV()"><i class="fa-solid fa-plus"></i> Novo PDI</button>` : ''}
   </div>
 </div>
 <div class="page-body">
@@ -1244,7 +1309,7 @@ async function renderPDV() {
               </td>
               <td>${statusBadge(r.status)}</td>
               <td style="display:flex;gap:6px">
-                ${userCan('edit') ? `<button class="btn-icon" onclick="openEditPDV('${r.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>` : ''}
+                ${userCan('edit_dev') ? `<button class="btn-icon" onclick="openEditPDV('${r.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>` : ''}
                 ${userCan('admin') ? `<button class="btn-icon" onclick="deletePDV('${r.id}')" title="Excluir"><i class="fa-solid fa-trash"></i></button>` : ''}
               </td>
             </tr>`;
@@ -1656,7 +1721,7 @@ async function renderBiblioteca() {
 <div class="page-header">
   <div class="page-title">Biblioteca do Conhecimento</div>
   <div class="page-actions">
-    <button class="btn-primary" onclick="openNewKnowledge()"><i class="fa-solid fa-plus"></i> Novo Artigo</button>
+    ${userCan('admin') ? `<button class="btn-primary" onclick="openNewKnowledge()"><i class="fa-solid fa-plus"></i> Novo Artigo</button>` : ''}
   </div>
 </div>
 <div class="page-body">
@@ -1875,6 +1940,58 @@ async function renderAniversarios() {
 </div>`;
 }
 
+// ─── ANIVERSÁRIO DE EMPRESA ───────────────────────────────────────────────────
+async function renderAniversarioEmpresa() {
+  const employees = await api.get('/employees') || [];
+  const today = new Date();
+  const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  const byMonth = {};
+  employees.forEach(e => {
+    if (!e.admission_date) return;
+    const m = parseInt(e.admission_date.split('-')[1]) - 1;
+    byMonth[m] = byMonth[m] || [];
+    byMonth[m].push(e);
+  });
+
+  return `
+<div class="page-header">
+  <div class="page-title">Aniversário de Empresa</div>
+</div>
+<div class="page-body">
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+    ${months.map((month, i) => {
+      const emps = byMonth[i] || [];
+      const isCurrent = i === today.getMonth();
+      return `
+        <div class="card ${isCurrent ? 'border-accent' : ''}" style="${isCurrent ? 'border:2px solid var(--accent)' : ''}">
+          <div class="card-header" style="${isCurrent ? 'background:var(--accent-light)' : ''}">
+            <span>${isCurrent ? '🎉 ' : ''}${month}</span>
+            <span style="margin-left:auto;font-size:12px;color:var(--text-3)">${emps.length} aniversariante${emps.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="card-body" style="padding:14px">
+            ${emps.length === 0 ? '<p style="font-size:13px;color:var(--text-3);text-align:center">Nenhum aniversário de empresa</p>' :
+            emps.map(e => {
+              const day = e.admission_date.split('-')[2];
+              const year = parseInt(e.admission_date.split('-')[0]);
+              const anos = today.getFullYear() - year;
+              return `
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+                  ${avatarHtml(e.name, 34)}
+                  <div style="flex:1">
+                    <div style="font-size:13px;font-weight:500">${e.name}</div>
+                    <div style="font-size:11.5px;color:var(--text-3)">${e.department || ''}${anos > 0 ? ' · ' + anos + ' ano' + (anos !== 1 ? 's' : '') : ''}</div>
+                  </div>
+                  <div style="font-size:18px;font-weight:600;color:var(--accent)">${day}</div>
+                </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+    }).join('')}
+  </div>
+</div>`;
+}
+
 // ─── AVALIAÇÃO DE DESEMPENHO ──────────────────────────────────────────────────
 async function renderAvaliacao() {
   const [reviews, employees] = await Promise.all([
@@ -1887,7 +2004,7 @@ async function renderAvaliacao() {
 <div class="page-header">
   <div class="page-title">Avaliação de Desempenho</div>
   <div class="page-actions">
-    <button class="btn-primary" onclick="openNewReview(${JSON.stringify(emps).replace(/"/g,'&quot;')})"><i class="fa-solid fa-plus"></i> Nova Avaliação</button>
+    ${userCan('edit_dev') ? `<button class="btn-primary" onclick="openNewReview(${JSON.stringify(emps).replace(/"/g,'&quot;')})"><i class="fa-solid fa-plus"></i> Nova Avaliação</button>` : ''}
   </div>
 </div>
 <div class="page-body">
@@ -2080,10 +2197,9 @@ function openNewUser() {
       <div class="form-group">
         <label>Perfil de Acesso</label>
         <select id="nu-role">
-          <option value="colaborador">Colaborador — só visualização</option>
-          <option value="lideranca">Liderança — visualização + Talentos</option>
-          <option value="rh">RH / Gestor — edição completa</option>
-          <option value="admin">Administrador — acesso total</option>
+          <option value="colaborador">Colaborador</option>
+          <option value="lideranca">Liderança</option>
+          <option value="admin">Administrador</option>
         </select>
       </div>
     </div>
@@ -2192,16 +2308,40 @@ async function renderFeed() {
 }
 
 // ─── FORMULÁRIOS ─────────────────────────────────────────────────────────────
+// Um item de `fields` pode ser uma string simples (input de texto, como antes)
+// ou um objeto { label, type } para campos tipados (ex.: type:'date' para os
+// seletores de Data Início/Data Fim usados na aprovação de Férias/Licença —
+// ver submitFormTemplate/_formFieldKey e o PUT /api/records/<id> no backend).
+function _formFieldLabel(f) { return typeof f === 'string' ? f : f.label; }
+function _formFieldType(f) { return typeof f === 'string' ? 'text' : (f.type || 'text'); }
+// Gera uma chave estável (sem acento, snake_case) a partir do label do campo,
+// para que o backend consiga localizar 'data_inicio'/'data_fim' no content
+// independente da ordem dos campos no template.
+function _formFieldKey(label) {
+  return label.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
 async function renderFormularios() {
   const records = await api.get('/records', { area: 'operacoes', module: 'formularios' }) || [];
 
   const templates = [
-    { icon: 'fa-umbrella-beach', title: 'Solicitação de Férias', color: 'green', fields: ['Período de início', 'Período de fim', 'Observações'] },
-    { icon: 'fa-file-medical', title: 'Solicitação de Licença', color: 'blue', fields: ['Tipo de licença', 'Data início', 'Data fim', 'Justificativa'] },
+    { icon: 'fa-umbrella-beach', title: 'Solicitação de Férias', color: 'green', fields: [{ label: 'Data Início', type: 'date' }, { label: 'Data Fim', type: 'date' }, 'Observações'] },
+    { icon: 'fa-file-medical', title: 'Solicitação de Licença', color: 'blue', fields: ['Tipo de licença', { label: 'Data Início', type: 'date' }, { label: 'Data Fim', type: 'date' }, 'Justificativa'] },
     { icon: 'fa-receipt', title: 'Reembolso de Despesas', color: 'amber', fields: ['Tipo de despesa', 'Valor (R$)', 'Data', 'Descrição'] },
-    { icon: 'fa-laptop', title: 'Solicitação de Equipamento', color: 'purple', fields: ['Tipo de equipamento', 'Justificativa', 'Urgência'] },
     { icon: 'fa-home', title: 'Home Office Eventual', color: 'teal', fields: ['Data', 'Motivo', 'Confirmação de infraestrutura'] },
   ];
+
+  // NOTA DE DESIGN (confirmar com o usuário antes do deploy): o pedido
+  // original dizia "card de solicitações recentes só aparece para o
+  // Administrador", mas isso conflita com o resto do pedido — Colaborador
+  // precisa ver as próprias solicitações e Liderança precisa ver todas para
+  // aprovar/recusar. Interpretação adotada aqui: o card continua visível para
+  // os três perfis, mas com escopo por perfil — Colaborador vê só as
+  // próprias (filtro forçado no servidor, GET /api/records), Liderança/
+  // Administrador veem todas e podem mudar o status via o <select> abaixo.
+  const podeAprovar = userCan('approve_formularios');
 
   return `
 <div class="page-header">
@@ -2227,7 +2367,12 @@ async function renderFormularios() {
         <tbody>${records.map(r => `
           <tr>
             <td><strong>${r.title}</strong></td>
-            <td>${statusBadge(r.status)}</td>
+            <td>${podeAprovar ? `
+              <select onchange="updateFormularioStatus(${JSON.stringify(r).replace(/"/g,'&quot;')}, this.value)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:12.5px;font-family:var(--font);background:var(--surface);color:var(--text)">
+                <option value="pendente" ${r.status === 'pendente' ? 'selected' : ''}>Pendente de aprovação</option>
+                <option value="aprovado" ${r.status === 'aprovado' ? 'selected' : ''}>Aprovado</option>
+                <option value="recusado" ${r.status === 'recusado' ? 'selected' : ''}>Recusado</option>
+              </select>` : statusBadge(r.status)}</td>
             <td>${priorityBadge(r.priority)}</td>
             <td>${fmtDate(r.created_at)}</td>
           </tr>`).join('')}
@@ -2239,7 +2384,11 @@ async function renderFormularios() {
 }
 
 function openFormTemplate(t) {
-  const formFields = t.fields.map((f, i) => `<div class="form-group"><label>${f}</label><input type="text" id="ft-${i}" placeholder="${f}..."></div>`).join('');
+  const formFields = t.fields.map((f, i) => {
+    const label = _formFieldLabel(f);
+    const type = _formFieldType(f);
+    return `<div class="form-group"><label>${label}</label><input type="${type}" id="ft-${i}" ${type === 'date' ? '' : `placeholder="${label}..."`}></div>`;
+  }).join('');
   openModal(t.title, `
     ${formFields}
     <div class="form-group"><label>Prioridade</label><select id="ft-priority">
@@ -2247,24 +2396,47 @@ function openFormTemplate(t) {
     </select></div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
-      <button class="btn-primary" onclick="submitFormTemplate('${t.title}',${t.fields.length})"><i class="fa-solid fa-paper-plane"></i> Enviar solicitação</button>
+      <button class="btn-primary" onclick="submitFormTemplate('${t.title}',${JSON.stringify(t.fields).replace(/"/g,'&quot;')})"><i class="fa-solid fa-paper-plane"></i> Enviar solicitação</button>
     </div>
   `);
 }
 
-async function submitFormTemplate(title, n) {
+async function submitFormTemplate(title, fields) {
   const content = {};
-  for (let i = 0; i < n; i++) {
-    content['field_' + i] = document.getElementById('ft-' + i)?.value || '';
-  }
+  fields.forEach((f, i) => {
+    const key = _formFieldKey(_formFieldLabel(f));
+    content[key] = document.getElementById('ft-' + i)?.value || '';
+  });
   const body = {
     area: 'operacoes', module: 'formularios',
     title, content,
     priority: document.getElementById('ft-priority')?.value || 'medium',
-    status: 'pending',
+    status: 'pendente',
   };
   const res = await api.post('/records', body);
   if (res) { closeModal(); showToast('Solicitação enviada!'); navigate('ops-formularios'); }
+}
+
+// Só chamado por quem tem userCan('approve_formularios') (Liderança/Admin) —
+// o <select> de status só é renderizado para esse público. O backend também
+// reforça isso via _pode_editar_record. Envia o registro completo (menos o
+// status alterado) porque o PUT /api/records/<id> sobrescreve title/content/
+// priority/due_date com o que vier no corpo.
+async function updateFormularioStatus(record, status) {
+  const body = {
+    title: record.title,
+    content: record.content,
+    status,
+    priority: record.priority,
+    due_date: record.due_date,
+  };
+  const res = await api.put('/records/' + record.id, body);
+  if (res?.success) {
+    showToast(status === 'aprovado' ? 'Solicitação aprovada!' : status === 'recusado' ? 'Solicitação recusada.' : 'Status atualizado.');
+    navigate('ops-formularios');
+  } else {
+    showToast('Erro ao atualizar status', 'error');
+  }
 }
 
 const DISC_WORDS = [
@@ -2374,7 +2546,7 @@ async function renderPDI360() {
   return `
 <div class="page-header">
   <div class="page-title">PDI — Avaliação 360°</div>
-  ${userCan('edit') ? '<div class="page-actions"><button class="btn-primary" onclick="openNewPDI360()"><i class="fa-solid fa-plus"></i> Nova Avaliação</button></div>' : ''}
+  ${userCan('edit_dev') ? '<div class="page-actions"><button class="btn-primary" onclick="openNewPDI360()"><i class="fa-solid fa-plus"></i> Nova Avaliação</button></div>' : ''}
 </div>
 <div class="page-body">
   <div class="form-group" style="max-width:360px">
@@ -2553,7 +2725,7 @@ async function openViewPDI360(empId, pdiId) {
     ${a.ai_recommendations ? `<div style="margin-top:8px;background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1.5px solid #7dd3fc;border-radius:8px;padding:12px"><div style="font-size:12px;font-weight:600;color:#0369a1;margin-bottom:6px">🤖 Recomendações do Agente Valore</div><div style="font-size:12px;color:var(--text-2);white-space:pre-wrap;line-height:1.6">${a.ai_recommendations}</div></div>` : ''}
     <div class="modal-footer" style="justify-content:space-between">
       ${userCan('admin') ? `<button class="btn-danger" onclick="deletePDI360('${empId}','${pdiId}')"><i class="fa-solid fa-trash"></i></button>` : '<div></div>'}
-      ${userCan('edit') ? `<button class="btn-primary" onclick="generateAI360('${empId}','${pdiId}')" id="btn-ai-360"><i class="fa-solid fa-robot"></i> Gerar Recomendações IA</button>` : ''}
+      ${userCan('edit_dev') ? `<button class="btn-primary" onclick="generateAI360('${empId}','${pdiId}')" id="btn-ai-360"><i class="fa-solid fa-robot"></i> Gerar Recomendações IA</button>` : ''}
     </div>
   `, 'lg');
 }
@@ -2663,7 +2835,7 @@ async function loadDiscTabV2(empId) {
         <div style="font-size:40px;margin-bottom:8px">📊</div>
         <div style="font-size:14px;font-weight:600;color:var(--text-2);margin-bottom:4px">DISC não aplicado</div>
         <div style="font-size:12px;color:var(--text-3);margin-bottom:16px">Aplique o questionário para ver o perfil comportamental</div>
-        ${userCan('edit') ? `<button class="btn-primary" onclick="openDISC('${empId}')"><i class="fa-solid fa-clipboard-list"></i> Aplicar DISC</button>` : ''}
+        ${userCan('edit_dev') ? `<button class="btn-primary" onclick="openDISC('${empId}')"><i class="fa-solid fa-clipboard-list"></i> Aplicar DISC</button>` : ''}
       </div>`;
     return;
   }
@@ -2723,7 +2895,7 @@ async function loadDiscTabV2(empId) {
     </div>
     <div style="display:flex;gap:8px">
       <button onclick="exportDiscPDF('${empId}')" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:12px;font-family:var(--font);color:var(--text)"><i class="fa-solid fa-file-pdf" style="color:#ef4444"></i> Exportar PDF</button>
-      ${userCan('edit') ? `<button onclick="openDISC('${empId}')" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:12px;font-family:var(--font);color:var(--text)"><i class="fa-solid fa-redo"></i> Reaplicar</button>` : ''}
+      ${userCan('edit_dev') ? `<button onclick="openDISC('${empId}')" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:12px;font-family:var(--font);color:var(--text)"><i class="fa-solid fa-redo"></i> Reaplicar</button>` : ''}
     </div>
     <div style="margin-top:8px;font-size:11px;color:var(--text-3);text-align:right">Aplicado em ${fmtDate(disc.created_at)}</div>
   `;

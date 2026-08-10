@@ -14,8 +14,15 @@
 </head>
 <body>
 
+<!-- TELA DE CARREGAMENTO — evita o "flash" da tela de login enquanto o
+     JavaScript ainda está verificando se já existe uma sessão válida
+     (por exemplo, vindo do login único do Valore Hub). -->
+<div id="app-loading" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0f1729;z-index:9999">
+  <img src="/logo_valore_branco.png" alt="Grupo Valore" style="width:140px;opacity:.9">
+</div>
+
 <!-- LOGIN PAGE -->
-<div id="login-page" class="login-page">
+<div id="login-page" class="login-page" style="display:none">
   <div class="login-left">
     <div class="login-brand">
       <img src="/logo_valore_branco.png" alt="Grupo Valore" class="login-logo">
@@ -36,6 +43,12 @@
     <!-- ── TELA DE LOGIN ─────────────────────────────────────────────── -->
     <div class="login-card" id="card-login">
       <h2>Login</h2>
+      <a href="https://portal.valore.com.br/portais/portal-rh/acessar/" id="sso-login-btn" class="btn-login btn-full" style="text-decoration:none;text-align:center;margin-bottom:18px">
+        <i class="fa-solid fa-shield-halved"></i> Entrar com o Valore Hub
+      </a>
+      <div id="sso-divider" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;color:#94a3b8;font-size:12px">
+        <hr style="flex:1;border-color:#e2e8f0"><span>ou entre com e-mail e senha</span><hr style="flex:1;border-color:#e2e8f0">
+      </div>
       <form id="login-form" onsubmit="handleLogin(event)">
         <div class="form-group">
           <label>E-mail corporativo</label>
@@ -53,9 +66,9 @@
           <span>Entrar</span> <i class="fa-solid fa-arrow-right"></i>
         </button>
         <div style="text-align:center;margin-top:16px">
-          <button type="button" onclick="showForgotPassword()" style="background:none;border:none;cursor:pointer;color:#1d4ed8;font-size:13px;font-family:var(--font);text-decoration:underline">
+          <a href="https://portal.valore.com.br/esqueci-a-senha/" style="color:#1d4ed8;font-size:13px;font-family:var(--font);text-decoration:underline">
             Esqueceu a senha?
-          </button>
+          </a>
         </div>
       </form>
     </div>
@@ -141,6 +154,7 @@
       <div class="nav-item" onclick="navigate('cultura-referencia')"><i class="bi bi-person-plus"></i><span>Programa de Referência</span></div>
       <div class="nav-item" onclick="navigate('cultura-experiencia')"><i class="bi bi-emoji-smile"></i><span>Experiência de Pessoas</span></div>
       <div class="nav-item" onclick="navigate('cultura-aniversarios')"><i class="bi bi-cake2"></i><span>Aniversários</span></div>
+      <div class="nav-item" onclick="navigate('cultura-aniversario-empresa')"><i class="bi bi-award"></i><span>Aniversário de Empresa</span></div>
       <div class="nav-item" onclick="navigate('cultura-eventos')"><i class="bi bi-calendar-event"></i><span>Eventos</span></div>
       <div class="nav-item" onclick="navigate('cultura-reconhecimentos')"><i class="bi bi-trophy"></i><span>Reconhecimentos</span></div>
 
@@ -155,11 +169,11 @@
       <div class="nav-section-label">Operações</div>
       <div class="nav-item" onclick="navigate('ops-servicos')"><i class="bi bi-ticket-perforated"></i><span>Gerenciamento de Serviços</span></div>
       <div class="nav-item" onclick="navigate('ops-formularios')"><i class="bi bi-list-check"></i><span>Formulários e Aprovações</span></div>
-      <div class="nav-item" onclick="navigate('settings')"><i class="bi bi-person-gear"></i><span>Gerenciador de Usuários</span></div>
+      <!-- Gerenciador de Usuários: gerenciamento de usuários agora é feito pelo Valore Hub. -->
     </nav>
 
     <div class="sidebar-footer">
-      <div class="sidebar-user-block" onclick="navigate('settings')" title="Configurações" style="cursor:pointer">
+      <div class="sidebar-user-block" title="Usuário">
         <div class="user-avatar-sm" id="sidebar-avatar">A</div>
         <div class="user-info-sm">
           <div id="sidebar-name">Usuário</div>

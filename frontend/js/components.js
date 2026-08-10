@@ -51,6 +51,10 @@ function statusBadge(status) {
     completed: ['badge-success', 'Concluído'],
     approved: ['badge-success', 'Aprovado'],
     rejected: ['badge-danger', 'Recusado'],
+    // Status de Formulários (Operações) — pt-BR, ver renderFormularios em pages.js.
+    pendente: ['badge-warning', 'Pendente de aprovação'],
+    aprovado: ['badge-success', 'Aprovado'],
+    recusado: ['badge-danger', 'Recusado'],
   };
   const [cls, label] = map[status] || ['badge-neutral', status];
   return `<span class="badge ${cls}">${label}</span>`;
@@ -174,9 +178,9 @@ function genericListPage({ icon, title, area, module, fields, emptyIcon = 'fa-fo
 <div class="page-header">
   <div class="page-title"><i class="fa-solid ${icon}"></i>${title}</div>
   <div class="page-actions">
-    <button class="btn-primary" onclick="openCreateRecord('${area}','${module}',${JSON.stringify(fields).replace(/"/g,'&quot;')})">
+    ${userCan('admin') ? `<button class="btn-primary" onclick="openCreateRecord('${area}','${module}',${JSON.stringify(fields).replace(/"/g,'&quot;')})">
       <i class="fa-solid fa-plus"></i> Novo Registro
-    </button>
+    </button>` : ''}
   </div>
 </div>
 <div class="page-body">
@@ -192,7 +196,7 @@ function genericListPage({ icon, title, area, module, fields, emptyIcon = 'fa-fo
               <td>${priorityBadge(r.priority)}</td>
               <td>${fmtDate(r.created_at)}</td>
               <td>
-                <button class="btn-icon" onclick="deleteRecord('${r.id}')" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                ${userCan('admin') ? `<button class="btn-icon" onclick="deleteRecord('${r.id}')" title="Excluir"><i class="fa-solid fa-trash"></i></button>` : ''}
               </td>
             </tr>`).join('')}
           </tbody>

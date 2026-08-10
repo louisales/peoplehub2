@@ -5,6 +5,7 @@ window._currentPage = 'dashboard';
 async function init() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('token')) {
+    document.getElementById('app-loading').style.display = 'none';
     document.getElementById('login-page').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
     document.getElementById('card-login').style.display = 'none';
@@ -18,26 +19,79 @@ async function init() {
     _currentUser = user;
     showApp(user);
     navigate('dashboard');
-  } else {
+  } else if (params.get('emergencial') === '1') {
+    // Acesso emergencial (break-glass): URL não é linkada em nenhum lugar da UI.
+    // Mantém o formulário local de e-mail/senha disponível caso o Hub esteja fora do ar.
     showLoginPage();
+    const ssoBtn = document.getElementById('sso-login-btn');
+    const ssoDivider = document.getElementById('sso-divider');
+    if (ssoBtn) ssoBtn.style.display = 'none';
+    if (ssoDivider) ssoDivider.style.display = 'none';
+  } else {
+    // Login local desativado por padrão: usuários sempre são enviados para o
+    // login único do Valore Hub. Acesso de emergência: /?emergencial=1
+    window.location.href = 'https://portal.valore.com.br/portais/portal-rh/acessar/';
+    return;
   }
+  document.getElementById('app-loading').style.display = 'none';
 }
 
 // ─── ROLE HELPERS ─────────────────────────────────────────────────────────────
 const ROLE_LABELS = {
   admin: 'Administrador',
-  rh: 'RH / Gestor',
-  gestor: 'RH / Gestor',
   lideranca: 'Liderança',
   colaborador: 'Colaborador',
 };
 
+// Páginas visíveis para Colaborador: Aprendizado, Férias, Política de
+// Empresa, e as seções inteiras de Cultura e Comunicação. Documentos
+// Admissionais foi tirado daqui a pedido — não aparece mais pra Colaborador.
+// 'dashboard' é sempre permitido para todo mundo, não precisa estar na lista.
+const PAGINAS_COLABORADOR = [
+  'dev-aprendizado',
+  'rh-ferias', 'rh-politicas',
+  'cultura-referencia', 'cultura-experiencia', 'cultura-aniversarios', 'cultura-aniversario-empresa', 'cultura-eventos', 'cultura-reconhecimentos',
+  'comm-feed', 'comm-noticias', 'comm-organograma', 'comm-biblioteca', 'comm-documentos', 'comm-beneficios',
+  'ops-formularios',
+];
+// Liderança tem tudo que Colaborador tem, mais PDI, DISC, Avaliações de
+// Desempenho e Documentos Admissionais.
+const PAGINAS_LIDERANCA_EXTRA = ['dev-avaliacao', 'dev-pdv', 'dev-pdi360', 'dev-disc-perfis', 'rh-admissional'];
+
+// Retorna a lista de páginas permitidas para o papel, ou null se não houver
+// restrição (Administrador vê tudo).
+function paginasPermitidas(role) {
+  if (role === 'admin') return null;
+  if (role === 'lideranca') return [...PAGINAS_COLABORADOR, ...PAGINAS_LIDERANCA_EXTRA];
+  return PAGINAS_COLABORADOR;
+}
+
+function paginaPermitida(page) {
+  if (page === 'dashboard') return true;
+  const role = _currentUser?.role || 'colaborador';
+  const permitidas = paginasPermitidas(role);
+  return permitidas === null || permitidas.includes(page);
+}
+
 function userCan(action) {
   const role = _currentUser?.role || 'colaborador';
-  if (action === 'edit') return ['admin', 'rh', 'gestor'].includes(role);
-  if (action === 'view_dev') return ['admin', 'rh', 'gestor', 'lideranca'].includes(role);
+  // Visão da área de Desenvolvimento: todos os perfis podem ao menos ver as
+  // páginas que têm acesso (a restrição de QUAIS páginas é feita por
+  // paginaPermitida/paginasPermitidas, não aqui).
+  if (action === 'view_dev') return true;
+  // Edição restrita a PDI, DISC e Avaliações de Desempenho: Liderança e Administrador.
+  if (action === 'edit_dev') return ['lideranca', 'admin'].includes(role);
+  // Aprovar/recusar solicitações em Formulários (Operações): Liderança e
+  // Administrador. Colaborador só visualiza (e somente as próprias — o
+  // filtro por dono é feito no servidor em GET /api/records).
+  if (action === 'approve_formularios') return ['lideranca', 'admin'].includes(role);
+  // Administração geral (usuários, configurações, exclusões, demais áreas).
   if (action === 'admin') return role === 'admin';
-  return true;
+  // Edição genérica (Aprendizado, Documentos, Férias, Política, Cultura,
+  // Comunicação, Colaboradores): apenas Administrador.
+  if (action === 'edit') return role === 'admin';
+  // Ação não reconhecida: nega por padrão.
+  return false;
 }
 
 function showApp(user) {
@@ -47,20 +101,22 @@ function showApp(user) {
   document.getElementById('sidebar-role').textContent = ROLE_LABELS[user.role] || user.role;
   document.getElementById('sidebar-avatar').textContent = initials(user.name);
 
-  // Controle de visibilidade do menu por perfil
+  // Controle de visibilidade do menu por perfil: esconde cada item do menu
+  // (`onclick="navigate('...')"`) cuja página não está liberada para o
+  // papel do usuário — não é mais só a seção "dev"/"settings", cobre toda
+  // a lista de páginas do sidebar.
   const role = user.role || 'colaborador';
-  const canEdit = userCan('edit');
-  const canViewDev = userCan('view_dev');
-  const isAdmin = userCan('admin');
-
-  // Esconder seção Desenvolvimento de Talentos para colaborador
-  document.querySelectorAll('[data-section="dev"]').forEach(el => {
-    el.style.display = canViewDev ? '' : 'none';
+  document.querySelectorAll('.nav-item[onclick^="navigate("]').forEach(el => {
+    const m = el.getAttribute('onclick').match(/navigate\('([^']+)'\)/);
+    const page = m && m[1];
+    if (!page) return;
+    el.style.display = paginaPermitida(page) ? '' : 'none';
   });
 
-  // Esconder Configurações para não-admin
+  // Esconder Configurações para não-admin (não tem item de menu, mas mantém
+  // a checagem aqui por precaução caso um link direto seja adicionado depois)
   document.querySelectorAll('[data-section="settings"]').forEach(el => {
-    el.style.display = isAdmin ? '' : 'none';
+    el.style.display = userCan('admin') ? '' : 'none';
   });
 }
 
@@ -233,6 +289,15 @@ async function handleLogout() {
   await api.post('/auth/logout');
   showLoginPage();
   showToast('Sessão encerrada', 'info');
+
+  // Sai só da sessão LOCAL do RH (sair de um portal não desloga dos outros
+  // nem do Hub). Tenta fechar a aba — funciona porque o card do Hub agora
+  // abre sem rel="noopener" — e cai de volta para o dashboard do Hub na
+  // mesma aba como fallback, sem forçar logout do Hub.
+  window.close();
+  setTimeout(() => {
+    window.location.href = 'https://portal.valore.com.br/';
+  }, 250);
 }
 
 function togglePassword() {
@@ -308,6 +373,7 @@ const routes = {
     {key:'impact',label:'Impacto esperado',type:'textarea'},
   ]}),
   'cultura-aniversarios': renderAniversarios,
+  'cultura-aniversario-empresa': renderAniversarioEmpresa,
   'cultura-eventos': renderEventos,
   'cultura-reconhecimentos': renderReconhecimentos,
   // Comunicação
@@ -325,24 +391,17 @@ const routes = {
 };
 
 async function navigate(page) {
-  // Controle de acesso por perfil
-  const devPages = ['dev-pesquisas','dev-avaliacao','dev-aprendizado','dev-pdv','dev-pdi360','dev-disc-perfis'];
-  const adminPages = ['settings'];
-  if (devPages.includes(page) && !userCan('view_dev')) {
-    document.getElementById('page-content').innerHTML = `
+  // Controle de acesso por perfil: bloqueia navegação direta (URL, F5, ou
+  // qualquer chamada a navigate() fora do menu) para páginas fora da lista
+  // liberada para o papel do usuário — cobre TODAS as páginas, não só
+  // "dev"/"settings" (o menu já esconde os itens, isso é a segunda camada,
+  // caso alguém chame navigate() diretamente pelo console/URL).
+  if (!paginaPermitida(page)) {
+    document.getElementById('page-container').innerHTML = `
       <div class="empty-state" style="margin-top:80px">
         <i class="fa-solid fa-lock" style="font-size:48px;color:var(--text-3)"></i>
         <h3>Acesso Restrito</h3>
         <p>Seu perfil não tem permissão para acessar esta área.</p>
-      </div>`;
-    return;
-  }
-  if (adminPages.includes(page) && !userCan('admin')) {
-    document.getElementById('page-content').innerHTML = `
-      <div class="empty-state" style="margin-top:80px">
-        <i class="fa-solid fa-lock" style="font-size:48px;color:var(--text-3)"></i>
-        <h3>Acesso Restrito</h3>
-        <p>Apenas administradores podem acessar esta área.</p>
       </div>`;
     return;
   }

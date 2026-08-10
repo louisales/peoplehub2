@@ -420,7 +420,7 @@ body {
 .user-avatar-sm {
   width: 32px; height: 32px; flex-shrink: 0;
   background: var(--accent);
-  border-radius: 50%;
+  border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 600; color: white;
 }
@@ -445,8 +445,8 @@ body {
   transition: all var(--transition);
 }
 .btn-logout:hover {
-  background: rgba(239,68,68,.15);
-  color: #ef4444;
+  background: rgba(220,38,38,.14);
+  color: #fca5a5;
 }
 
 /* ─── MAIN CONTENT ────────────────────────────────────────────────────────── */
@@ -1181,9 +1181,9 @@ select {
 }
 
 /* Cor de destaque da sidebar (avatar, item ativo/hover) no padrão Valore:
-   laranja, não o roxo usado no resto do app. */
+   azul, não o roxo usado no resto do app. */
 .sidebar .user-avatar-sm {
-  background: #f28c28;
+  background: #1A6FCC;
 }
 
 .sidebar .nav-item:hover {
@@ -1195,7 +1195,7 @@ select {
 }
 
 .sidebar .nav-item.active::before {
-  background: #f28c28;
+  background: #1A6FCC;
 }
 
 .sidebar .nav-sub-item:hover {
@@ -1208,5 +1208,5 @@ select {
 }
 
 .sidebar .nav-sub-item.active::before {
-  background: #f28c28;
+  background: #1A6FCC;
 }

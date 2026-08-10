@@ -1,10 +1,11 @@
-from flask import Flask, request, jsonify, session, send_from_directory
+from flask import Flask, request, jsonify, session, send_from_directory, redirect
 from flask_cors import CORS
 import psycopg2
 import psycopg2.extras
 import psycopg2.errors
 import bcrypt
 import os
+import time
 import uuid
 import json
 import random
@@ -19,6 +20,8 @@ import hashlib
 import csv as _csv
 import io as _io
 from flask import Response as _Response
+import requests
+import jwt as pyjwt
 
 load_dotenv()
 
@@ -29,6 +32,167 @@ CORS(app, supports_credentials=True)
 DATABASE_URL = os.environ.get('DATABASE_URL')
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# ── SSO — Valore Hub ─────────────────────────────────────────────────────────
+HUB_BASE_URL = os.environ.get('HUB_BASE_URL', 'https://portal.valore.com.br').rstrip('/')
+SSO_CLIENT_ID = os.environ.get('SSO_CLIENT_ID', 'portal-rh')
+SSO_CLIENT_SECRET = os.environ.get('SSO_CLIENT_SECRET', '')
+RH_PROVISIONING_API_KEY = os.environ.get('RH_PROVISIONING_API_KEY', '')
+
+# Mapeia o departamento cadastrado no RH para o nome do grupo no Hub (usado
+# para liberar os softwares/ferramentas padrão daquele departamento). Grupos
+# sem equivalente direto no Hub são criados lá com o mesmo nome do RH.
+RH_DEPT_TO_HUB_GROUP = {
+    'Contábil': 'Contábil',
+    'Fiscal': 'Fiscal',
+    'Departamento Pessoal': 'Departamento Pessoal',
+    'Sucesso do Cliente': 'Sucesso do Cliente',
+    'Administrativo': 'Administrativo',
+    'Paralegal': 'Paralegal',
+    'Diretoria': 'Diretoria',
+    'Marketing': 'Marketing',
+    'Tecnologia': 'Tecnologia',
+    # Financeiro e Consultoria eram grupos duplicados no Hub — unificados em
+    # "Consultoria", que é quem tem os acessos de verdade hoje.
+    'BPO Financeiro': 'Consultoria',
+    'Financeiro': 'Consultoria',
+    'Consultoria': 'Consultoria',
+}
+
+
+def provisionar_usuario_hub(nome, email, departamento, cargo=''):
+    """
+    Cria automaticamente o usuário no Hub na admissão do funcionário, sem
+    nenhum acesso a portal — só o grupo do departamento (que já libera os
+    softwares/ferramentas padrão) e o cargo, que passa a ser preenchido só
+    por aqui (não é mais editável manualmente na tela de gestão do Hub).
+    Falha aberta: se o Hub estiver fora do ar, não bloqueia a admissão, só
+    loga o problema.
+    """
+    if not email or '@' not in email or not RH_PROVISIONING_API_KEY:
+        return
+    try:
+        requests.post(
+            f'{HUB_BASE_URL}/api/provisioning/rh/',
+            json={
+                'api_key': RH_PROVISIONING_API_KEY,
+                'name': nome or '',
+                'email': email,
+                'department_group': RH_DEPT_TO_HUB_GROUP.get(departamento or '', departamento or ''),
+                'position': cargo or '',
+            },
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        app.logger.warning('Falha ao provisionar usuário no Hub (email=%s): %s', email, exc)
+SSO_DASHBOARD_PATH = os.environ.get('SSO_DASHBOARD_PATH', '/')
+
+# Mapeia o perfil do Hub (RH_PORTAL_ROLE_CHOICES) para os valores de `role`
+# já usados neste sistema (ver ROLE_LABELS no frontend/js/app.js).
+MAPA_PERFIL_HUB_RH = {
+    'rh_colaborador': 'colaborador',
+    'rh_lideranca': 'lideranca',
+    'rh_gestor': 'admin',
+    'rh_administrador': 'admin',
+}
+
+_hub_public_key_cache = {'pem': None, 'fetched_at': 0.0}
+_HUB_PUBLIC_KEY_CACHE_SECONDS = 3600
+
+
+def obter_chave_publica_hub(forcar_atualizacao=False):
+    agora = time.time()
+    if not forcar_atualizacao and _hub_public_key_cache['pem'] and (agora - _hub_public_key_cache['fetched_at'] < _HUB_PUBLIC_KEY_CACHE_SECONDS):
+        return _hub_public_key_cache['pem']
+    resp = requests.get(f'{HUB_BASE_URL}/api/sso/public-key/', timeout=10)
+    resp.raise_for_status()
+    _hub_public_key_cache['pem'] = resp.text
+    _hub_public_key_cache['fetched_at'] = agora
+    return resp.text
+
+
+class SSOClientError(Exception):
+    pass
+
+
+def trocar_codigo_por_claims(code):
+    """Troca o código do Hub pelo id_token (RS256) e valida a assinatura, issuer e audience."""
+    try:
+        resp = requests.post(
+            f'{HUB_BASE_URL}/api/sso/exchange/',
+            json={'code': code, 'client_id': SSO_CLIENT_ID, 'client_secret': SSO_CLIENT_SECRET},
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        raise SSOClientError(f'Falha ao conectar ao Hub: {exc}')
+
+    if resp.status_code != 200:
+        raise SSOClientError(f'Hub recusou o código: {resp.text}')
+
+    id_token = resp.json().get('id_token', '')
+
+    try:
+        claims = pyjwt.decode(id_token, obter_chave_publica_hub(), algorithms=['RS256'], audience=SSO_CLIENT_ID)
+    except pyjwt.PyJWTError:
+        try:
+            claims = pyjwt.decode(id_token, obter_chave_publica_hub(forcar_atualizacao=True), algorithms=['RS256'], audience=SSO_CLIENT_ID)
+        except pyjwt.PyJWTError as exc2:
+            raise SSOClientError(f'Token do Hub inválido: {exc2}')
+
+    if claims.get('iss') != HUB_BASE_URL:
+        raise SSOClientError('Token emitido por um emissor não reconhecido.')
+    if claims.get('portal') != SSO_CLIENT_ID:
+        raise SSOClientError('Token emitido para outro portal.')
+
+    return claims
+
+
+def localizar_ou_criar_usuario_via_sso(claims):
+    """Vincula (por hub_user_id) ou cria o usuário local a partir das claims do Hub."""
+    hub_user_id = str(claims['sub'])
+    email = claims['email'].strip().lower()
+    nome = claims.get('name') or email.split('@')[0]
+    portal_role = claims.get('portal_role') or 'consulta'
+    role_local = MAPA_PERFIL_HUB_RH.get(portal_role, 'colaborador')
+
+    conn = get_db()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT * FROM users WHERE hub_user_id = %s", (hub_user_id,))
+        row = c.fetchone()
+        user = row_to_dict(row, c) if row else None
+
+        if not user:
+            c.execute("SELECT * FROM users WHERE email = %s", (email,))
+            row = c.fetchone()
+            user = row_to_dict(row, c) if row else None
+            if user:
+                c.execute("UPDATE users SET hub_user_id = %s WHERE id = %s", (hub_user_id, user['id']))
+            else:
+                novo_id = str(uuid.uuid4())
+                senha_inutilizavel = bcrypt.hashpw(secrets.token_urlsafe(32).encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                c.execute(
+                    """INSERT INTO users (id, name, email, password_hash, role, hub_user_id, active)
+                       VALUES (%s, %s, %s, %s, %s, %s, 1)""",
+                    (novo_id, nome, email, senha_inutilizavel, role_local, hub_user_id),
+                )
+                user = {'id': novo_id, 'active': 1}
+
+        if not user.get('active'):
+            raise SSOClientError('Usuário está bloqueado neste portal.')
+
+        c.execute(
+            """UPDATE users SET name = %s, role = %s, hub_portal_role = %s, hub_session_version = %s,
+               last_sso_login = %s, permission_checked_at = %s WHERE id = %s""",
+            (nome, role_local, portal_role, claims.get('session_version'), datetime.utcnow(), datetime.utcnow(), user['id']),
+        )
+        conn.commit()
+
+        c.execute("SELECT id, name, email, role, department FROM users WHERE id = %s", (user['id'],))
+        row = c.fetchone()
+        return row_to_dict(row, c)
+    finally:
+        conn.close()
 
 
 def get_db():
@@ -284,6 +448,29 @@ def init_db():
         )
     """)
 
+    # Integração SSO com o Valore Hub — vínculo por hub_user_id.
+    c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS hub_user_id TEXT")
+    c.execute("DO $$ BEGIN "
+              "IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_hub_user_id_key') THEN "
+              "ALTER TABLE users ADD CONSTRAINT users_hub_user_id_key UNIQUE (hub_user_id); "
+              "END IF; END $$;")
+    c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS hub_portal_role TEXT")
+    c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS hub_session_version INTEGER")
+    c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_sso_login TIMESTAMP")
+    c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS permission_checked_at TIMESTAMP")
+
+    # Segmentação por departamento em notícias e eventos — NULL ou 'all' = todos.
+    c.execute("ALTER TABLE news ADD COLUMN IF NOT EXISTS department TEXT")
+    c.execute("ALTER TABLE events ADD COLUMN IF NOT EXISTS department TEXT")
+
+    # Dono do registro (quem enviou) — usado para restringir Colaborador a ver
+    # somente as próprias solicitações em Formulários (Operações).
+    c.execute("ALTER TABLE records ADD COLUMN IF NOT EXISTS created_by_user_id TEXT")
+
+    # Simplificação de perfis: 'rh' e 'gestor' deixam de existir — quem tinha
+    # esses perfis passa a ser 'admin' (perfil único de acesso total). Idempotente.
+    c.execute("UPDATE users SET role = 'admin' WHERE role IN ('rh', 'gestor')")
+
     # Seed admin user
     c.execute("SELECT id FROM users WHERE email = 'admin@empresa.com'")
     if not c.fetchone():
@@ -354,6 +541,87 @@ def login_required(f):
     return decorated
 
 
+# ── SSO — Introspecção de permissão (Hub) ───────────────────────────────────
+# Garante que revogações/alterações de acesso feitas no Hub (bloqueio,
+# mudança de perfil, logout forçado) se refletem aqui em poucos segundos,
+# em vez de só no próximo login.
+SSO_PERMISSION_CACHE_SECONDS = 60
+
+
+def checar_permissao_no_hub(hub_user_id):
+    """Consulta o endpoint de introspecção do Hub. Propaga requests.RequestException em falha de rede."""
+    resp = requests.post(
+        f'{HUB_BASE_URL}/api/sso/introspect/',
+        json={'client_id': SSO_CLIENT_ID, 'client_secret': SSO_CLIENT_SECRET, 'sub': hub_user_id},
+        timeout=5,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+@app.before_request
+def verificar_permissao_sso():
+    """Revalida periodicamente, junto ao Hub, se o usuário autenticado ainda tem acesso.
+
+    Só se aplica a usuários vinculados via SSO (hub_user_id preenchido) e usa um
+    cache de SSO_PERMISSION_CACHE_SECONDS segundos para não bater no Hub a cada requisição.
+    Falhas de rede ao consultar o Hub não bloqueiam a requisição (fail open).
+    """
+    if 'user_id' not in session:
+        return None
+
+    user_id = session['user_id']
+    conn = get_db()
+    c = conn.cursor()
+    try:
+        c.execute(
+            "SELECT hub_user_id, hub_session_version, permission_checked_at FROM users WHERE id = %s",
+            (user_id,),
+        )
+        row = c.fetchone()
+        if not row:
+            return None
+        hub_user_id, hub_session_version, permission_checked_at = row
+
+        if not hub_user_id:
+            return None  # conta local (pré-existente), sem vínculo SSO
+
+        agora = datetime.utcnow()
+        precisa_checar = (
+            permission_checked_at is None or
+            (agora - permission_checked_at).total_seconds() > SSO_PERMISSION_CACHE_SECONDS
+        )
+        if not precisa_checar:
+            return None
+
+        try:
+            resultado = checar_permissao_no_hub(hub_user_id)
+        except requests.RequestException as exc:
+            app.logger.warning('Falha ao consultar introspecção do Hub para usuário %s: %s', user_id, exc)
+            return None
+
+        novo_session_version = resultado.get('session_version')
+        sessao_invalidada = (
+            not resultado.get('active', False) or
+            (novo_session_version is not None and hub_session_version is not None and
+             novo_session_version > hub_session_version)
+        )
+        if sessao_invalidada:
+            session.clear()
+            if request.path.startswith('/api/'):
+                return jsonify({'error': 'Sua sessão expirou ou seu acesso foi revogado no Valore Hub.'}), 401
+            return redirect(f'{HUB_BASE_URL}/login/')
+
+        c.execute(
+            "UPDATE users SET hub_portal_role = %s, hub_session_version = %s, permission_checked_at = %s WHERE id = %s",
+            (resultado.get('portal_role'), novo_session_version, agora, user_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    return None
+
+
 # ── AUTH ──────────────────────────────────────────────────────────────────────
 @app.route('/api/auth/login', methods=['POST'])
 def login():
@@ -388,6 +656,29 @@ def logout():
     from flask import redirect
     session.clear()
     return redirect('/')
+
+
+@app.route('/auth/sso/callback', methods=['GET'])
+def sso_callback():
+    code = request.args.get('code', '').strip()
+    if not code:
+        return redirect('/?erro=sso_sem_codigo')
+
+    try:
+        claims = trocar_codigo_por_claims(code)
+        user = localizar_ou_criar_usuario_via_sso(claims)
+    except SSOClientError as exc:
+        app.logger.warning('Falha no login SSO: %s', exc)
+        return redirect('/?erro=sso_falhou')
+
+    session['user_id'] = user['id']
+    session['user_name'] = user['name']
+    session['user_role'] = user['role']
+    session.permanent = True
+
+    log_action(user['id'], 'LOGIN', 'auth', details='via Valore Hub (SSO)')
+    return redirect(SSO_DASHBOARD_PATH)
+
 
 def send_reset_email(to_email, reset_link, user_name):
     gmail_user = os.environ.get('GMAIL_USER')
@@ -448,6 +739,100 @@ def send_reset_email(to_email, reset_link, user_name):
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
         server.login(gmail_user, gmail_password)
         server.sendmail(gmail_user, to_email, msg.as_string())
+
+
+# ── Notificações por e-mail — Notícias e Eventos ─────────────────────────────
+def departamento_visivel_para(department_value, user_department):
+    """Verifica se um valor de `department` (NULL, 'all' ou lista separada por
+    vírgula) é visível para o departamento do usuário logado."""
+    if not department_value or department_value == 'all':
+        return True
+    alvos = [d.strip() for d in department_value.split(',') if d.strip()]
+    return user_department in alvos
+
+
+def obter_departamento_usuario(user_id):
+    conn = get_db()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT department FROM users WHERE id = %s", (user_id,))
+        row = c.fetchone()
+        return row[0] if row else None
+    finally:
+        conn.close()
+
+
+def emails_funcionarios_por_departamento(department_value):
+    """Retorna os e-mails de funcionários ativos alvo de uma notícia/evento."""
+    conn = get_db()
+    c = conn.cursor()
+    try:
+        if not department_value or department_value == 'all':
+            c.execute("SELECT email FROM employees WHERE status = 'active' AND email IS NOT NULL AND email != ''")
+        else:
+            alvos = [d.strip() for d in department_value.split(',') if d.strip()]
+            if not alvos:
+                c.execute("SELECT email FROM employees WHERE status = 'active' AND email IS NOT NULL AND email != ''")
+            else:
+                c.execute(
+                    "SELECT email FROM employees WHERE status = 'active' AND email IS NOT NULL "
+                    "AND email != '' AND department IN %s",
+                    (tuple(alvos),)
+                )
+        return [row[0] for row in c.fetchall() if row[0] and '@' in row[0]]
+    finally:
+        conn.close()
+
+
+def enviar_notificacao_em_massa(subject, html_body, to_emails):
+    gmail_user = os.environ.get('GMAIL_USER')
+    gmail_password = os.environ.get('GMAIL_PASSWORD')
+
+    if not gmail_user or not gmail_password:
+        raise ValueError('GMAIL_USER e GMAIL_PASSWORD nao configurados no .env')
+
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+        server.login(gmail_user, gmail_password)
+        for to_email in to_emails:
+            try:
+                msg = MIMEMultipart('alternative')
+                msg['Subject'] = subject
+                msg['From'] = 'Valore RH <' + gmail_user + '>'
+                msg['To'] = to_email
+                msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+                server.sendmail(gmail_user, to_email, msg.as_string())
+            except Exception as exc:
+                # Um endereço inválido não pode travar o envio para o resto
+                # da lista (ex.: e-mail cadastrado errado em um funcionário).
+                app.logger.warning('Falha ao enviar notificação para %s: %s', to_email, exc)
+
+
+def montar_email_notificacao(titulo_topo, subtitulo, linhas_html):
+    app_url = os.environ.get('APP_URL', 'https://rh.valore.com.br')
+    return (
+        '<div style="font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px;">'
+        '<div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden;">'
+        '<div style="background: #1d4ed8; padding: 28px 32px;">'
+        '<h1 style="color: #ffffff; margin: 0; font-size: 20px;">Valore RH</h1>'
+        '<p style="color: #bfdbfe; margin: 4px 0 0;">' + subtitulo + '</p>'
+        '</div>'
+        '<div style="padding: 32px;">'
+        + linhas_html +
+        '<div style="text-align: center; margin: 32px 0;">'
+        '<a href="' + app_url + '" style="background: #1d4ed8; color: #ffffff; padding: 14px 28px; '
+        'border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block;">'
+        'Acessar o Valore RH'
+        '</a>'
+        '</div>'
+        '</div>'
+        '<div style="background: #f9fafb; padding: 16px 32px; text-align: center;">'
+        '<p style="color: #9ca3af; font-size: 12px; margin: 0;">'
+        'Este e um e-mail automatico. Por favor, nao responda.'
+        '</p>'
+        '</div>'
+        '</div>'
+        '</div>'
+    )
 
 
 @app.route('/api/auth/forgot-password', methods=['POST'])
@@ -651,6 +1036,7 @@ def create_employee():
     conn.commit()
     conn.close()
     log_action(session['user_id'], 'CREATE', 'employee', emp_id, data.get('name'))
+    provisionar_usuario_hub(data.get('name'), data.get('email'), data.get('department'), data.get('position'))
     return jsonify({'id': emp_id, 'success': True}), 201
 
 
@@ -721,6 +1107,15 @@ def get_records():
     if search:
         query += " AND (title ILIKE %s OR content ILIKE %s)"
         params.extend([f'%{search}%', f'%{search}%'])
+    # Colaborador só pode ver as próprias solicitações em Formulários
+    # (Operações) — filtro forçado no servidor (não confia em parâmetro vindo
+    # do cliente). Liderança e Administrador continuam vendo todas, pois
+    # precisam aprovar/recusar. Escopo limitado a este módulo para não afetar
+    # a visibilidade de Colaborador em outras páginas genéricas (Férias,
+    # Documentos Admissionais etc.), que hoje listam registros de terceiros.
+    if session.get('user_role') == 'colaborador' and area == 'operacoes' and module == 'formularios':
+        query += " AND created_by_user_id = %s"
+        params.append(session['user_id'])
     query += " ORDER BY created_at DESC"
     c.execute(query, params)
     records = rows_to_list(c.fetchall(), c)
@@ -728,23 +1123,58 @@ def get_records():
     return jsonify(records)
 
 
+def _pode_editar_record(area, module):
+    """PDI (área dev_talentos / módulo pdv) e Formulários (área operacoes /
+    módulo formularios) podem ser editados/aprovados por Liderança além de
+    Administrador; todas as demais áreas (Aprendizado, Documentos
+    Admissionais, Férias, Cultura, etc.) são restritas a Administrador."""
+    role = session.get('user_role')
+    if role == 'admin':
+        return True
+    if role == 'lideranca' and area == 'dev_talentos' and module == 'pdv':
+        return True
+    if role == 'lideranca' and area == 'operacoes' and module == 'formularios':
+        return True
+    return False
+
+
+def _pode_criar_record(area, module):
+    """Quem pode enviar (POST) um novo registro. Quem pode editar sempre pode
+    criar; além disso, Formulários (Operações) aceita envio de QUALQUER
+    usuário autenticado (Colaborador, Liderança, Administrador) — é a própria
+    tela de solicitação. A aprovação/mudança de status continua restrita a
+    Liderança/Administrador via _pode_editar_record."""
+    if _pode_editar_record(area, module):
+        return True
+    if area == 'operacoes' and module == 'formularios':
+        return True
+    return False
+
+
 @app.route('/api/records', methods=['POST'])
 @login_required
 def create_record():
     data = request.get_json()
+    area = data.get('area')
+    module = data.get('module')
+    if not _pode_criar_record(area, module):
+        return jsonify({'error': 'Acesso negado'}), 403
     rec_id = str(uuid.uuid4())
     content = json.dumps(data.get('content', {})) if isinstance(data.get('content'), dict) else data.get('content', '')
     tags = json.dumps(data.get('tags', [])) if isinstance(data.get('tags'), list) else data.get('tags', '')
+    # Formulários (Operações) usa 'pendente'/'aprovado'/'recusado' como status
+    # padrão (em vez do genérico 'active' usado pelas demais áreas).
+    default_status = 'pendente' if module == 'formularios' else 'active'
     conn = get_db()
     c = conn.cursor()
-    c.execute("""INSERT INTO records (id, area, module, title, content, employee_id, status, priority, due_date, tags, created_by)
-                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-              (rec_id, data.get('area'), data.get('module'), data.get('title'), content,
-               data.get('employee_id'), data.get('status', 'active'), data.get('priority', 'medium'),
-               data.get('due_date'), tags, session['user_id']))
+    c.execute("""INSERT INTO records (id, area, module, title, content, employee_id, status, priority, due_date, tags, created_by, created_by_user_id)
+                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+              (rec_id, area, module, data.get('title'), content,
+               data.get('employee_id'), data.get('status', default_status), data.get('priority', 'medium'),
+               data.get('due_date'), tags, session['user_id'], session['user_id']))
     conn.commit()
     conn.close()
-    log_action(session['user_id'], 'CREATE', f"{data.get('area')}/{data.get('module')}", rec_id, data.get('title'))
+    log_action(session['user_id'], 'CREATE', f"{area}/{module}", rec_id, data.get('title'))
     return jsonify({'id': rec_id, 'success': True}), 201
 
 
@@ -752,13 +1182,49 @@ def create_record():
 @login_required
 def update_record(rec_id):
     data = request.get_json()
-    content = json.dumps(data.get('content', {})) if isinstance(data.get('content'), dict) else data.get('content', '')
     conn = get_db()
     c = conn.cursor()
+    c.execute("SELECT area, module FROM records WHERE id = %s", (rec_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({'error': 'Não encontrado'}), 404
+    if not _pode_editar_record(row[0], row[1]):
+        conn.close()
+        return jsonify({'error': 'Acesso negado'}), 403
+    content = json.dumps(data.get('content', {})) if isinstance(data.get('content'), dict) else data.get('content', '')
     c.execute("""UPDATE records SET title=%s, content=%s, status=%s, priority=%s, due_date=%s,
                  updated_at=CURRENT_TIMESTAMP WHERE id=%s""",
               (data.get('title'), content, data.get('status'), data.get('priority'), data.get('due_date'), rec_id))
     conn.commit()
+
+    # Aprovação de Solicitação de Férias/Licença (Formulários/Operações) cria
+    # automaticamente um registro espelho em rh/ferias com o período
+    # preenchido, para aparecer na página de Férias. Feito aqui no PUT
+    # (server-side, não depende do cliente). Uma falha aqui NÃO deve derrubar
+    # a resposta de sucesso da troca de status — só loga um aviso.
+    if row[0] == 'operacoes' and row[1] == 'formularios' and data.get('status') == 'aprovado':
+        try:
+            c.execute("SELECT title, content FROM records WHERE id = %s", (rec_id,))
+            rec_row = c.fetchone()
+            if rec_row and rec_row[0] in ('Solicitação de Férias', 'Solicitação de Licença'):
+                rec_content = json.loads(rec_row[1]) if rec_row[1] else {}
+                data_inicio = rec_content.get('data_inicio', '')
+                data_fim = rec_content.get('data_fim', '')
+                if data_inicio and data_fim:
+                    tipo = 'ferias' if rec_row[0] == 'Solicitação de Férias' else 'licenca_medica'
+                    periodo = f"{data_inicio} a {data_fim}"
+                    ferias_title = rec_row[0] + (' — ' + session.get('user_name', '') if session.get('user_name') else '')
+                    ferias_content = {'type': tipo, 'period': periodo}
+                    c.execute(
+                        """INSERT INTO records (id, area, module, title, content, status, priority, created_by, created_by_user_id)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                        (str(uuid.uuid4()), 'rh', 'ferias', ferias_title, json.dumps(ferias_content),
+                         'active', 'medium', session['user_id'], session['user_id']))
+                    conn.commit()
+        except Exception as exc:
+            app.logger.warning('Falha ao criar registro de férias a partir da aprovação do formulário %s: %s', rec_id, exc)
+
     conn.close()
     return jsonify({'success': True})
 
@@ -768,10 +1234,32 @@ def update_record(rec_id):
 def delete_record(rec_id):
     conn = get_db()
     c = conn.cursor()
+    c.execute("SELECT area, module FROM records WHERE id = %s", (rec_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({'error': 'Não encontrado'}), 404
+    if not _pode_editar_record(row[0], row[1]):
+        conn.close()
+        return jsonify({'error': 'Acesso negado'}), 403
     c.execute("DELETE FROM records WHERE id=%s", (rec_id,))
     conn.commit()
     conn.close()
     return jsonify({'success': True})
+
+
+# ── DEPARTAMENTOS ─────────────────────────────────────────────────────────────
+@app.route('/api/departments', methods=['GET'])
+@login_required
+def get_departments():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""SELECT DISTINCT department FROM employees
+                 WHERE status='active' AND department IS NOT NULL AND department != ''
+                 ORDER BY department""")
+    departments = [row[0] for row in c.fetchall()]
+    conn.close()
+    return jsonify(departments)
 
 
 # ── NEWS ──────────────────────────────────────────────────────────────────────
@@ -783,28 +1271,52 @@ def get_news():
     c.execute("SELECT * FROM news ORDER BY pinned DESC, created_at DESC")
     news = rows_to_list(c.fetchall(), c)
     conn.close()
+    user_department = obter_departamento_usuario(session['user_id'])
+    news = [n for n in news if departamento_visivel_para(n.get('department'), user_department)]
     return jsonify(news)
 
 
 @app.route('/api/news', methods=['POST'])
 @login_required
 def create_news():
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
     data = request.get_json()
     news_id = str(uuid.uuid4())
+    department = data.get('department') or 'all'
     conn = get_db()
     c = conn.cursor()
-    c.execute("""INSERT INTO news (id, title, content, category, author, published, pinned)
-                 VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+    c.execute("""INSERT INTO news (id, title, content, category, author, published, pinned, department)
+                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
               (news_id, data.get('title'), data.get('content'), data.get('category'),
-               session.get('user_name', 'Sistema'), data.get('published', 0), data.get('pinned', 0)))
+               session.get('user_name', 'Sistema'), data.get('published', 0), data.get('pinned', 0), department))
     conn.commit()
     conn.close()
+
+    try:
+        recipients = emails_funcionarios_por_departamento(department)
+        if recipients:
+            excerpt = (data.get('content') or '')[:200]
+            corpo = montar_email_notificacao(
+                'Nova Notícia',
+                'Nova Notícia',
+                '<p style="color: #374151; font-size: 15px;">Uma nova notícia foi publicada no Valore RH:</p>'
+                '<p style="color: #111827; font-size: 16px; font-weight: bold; margin: 16px 0 6px;">' + (data.get('title') or '') + '</p>'
+                '<p style="color: #6b7280; font-size: 13px;">' + excerpt + ('...' if len(data.get('content') or '') > 200 else '') + '</p>'
+                '<p style="color: #374151; font-size: 14px;">Acesse o portal para ler a notícia completa.</p>'
+            )
+            enviar_notificacao_em_massa('Nova notícia: ' + (data.get('title') or ''), corpo, recipients)
+    except Exception as exc:
+        app.logger.warning('Falha ao enviar e-mails de notificação de notícia %s: %s', news_id, exc)
+
     return jsonify({'id': news_id, 'success': True}), 201
 
 
 @app.route('/api/news/<news_id>', methods=['PUT'])
 @login_required
 def update_news(news_id):
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
     data = request.get_json()
     conn = get_db()
     c = conn.cursor()
@@ -820,6 +1332,8 @@ def update_news(news_id):
 @app.route('/api/news/<news_id>', methods=['DELETE'])
 @login_required
 def delete_news(news_id):
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
     conn = get_db()
     c = conn.cursor()
     c.execute("DELETE FROM news WHERE id=%s", (news_id,))
@@ -837,22 +1351,45 @@ def get_events():
     c.execute("SELECT * FROM events ORDER BY date ASC")
     events = rows_to_list(c.fetchall(), c)
     conn.close()
+    user_department = obter_departamento_usuario(session['user_id'])
+    events = [e for e in events if departamento_visivel_para(e.get('department'), user_department)]
     return jsonify(events)
 
 
 @app.route('/api/events', methods=['POST'])
 @login_required
 def create_event():
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
     data = request.get_json()
     ev_id = str(uuid.uuid4())
+    department = data.get('department') or 'all'
     conn = get_db()
     c = conn.cursor()
-    c.execute("""INSERT INTO events (id, title, description, event_type, date, time, location, created_by)
-                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+    c.execute("""INSERT INTO events (id, title, description, event_type, date, time, location, created_by, department)
+                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
               (ev_id, data.get('title'), data.get('description'), data.get('event_type'),
-               data.get('date'), data.get('time'), data.get('location'), session['user_id']))
+               data.get('date'), data.get('time'), data.get('location'), session['user_id'], department))
     conn.commit()
     conn.close()
+
+    try:
+        recipients = emails_funcionarios_por_departamento(department)
+        if recipients:
+            corpo = montar_email_notificacao(
+                'Novo Evento',
+                'Novo Evento',
+                '<p style="color: #374151; font-size: 15px;">Um novo evento foi agendado no Valore RH:</p>'
+                '<p style="color: #111827; font-size: 16px; font-weight: bold; margin: 16px 0 6px;">' + (data.get('title') or '') + '</p>'
+                '<p style="color: #374151; font-size: 14px;">Data: ' + (data.get('date') or '—') + '</p>'
+                '<p style="color: #374151; font-size: 14px;">Horário: ' + (data.get('time') or '—') + '</p>'
+                '<p style="color: #374151; font-size: 14px;">Local: ' + (data.get('location') or '—') + '</p>'
+                '<p style="color: #6b7280; font-size: 13px;">' + (data.get('description') or '') + '</p>'
+            )
+            enviar_notificacao_em_massa('Novo evento: ' + (data.get('title') or ''), corpo, recipients)
+    except Exception as exc:
+        app.logger.warning('Falha ao enviar e-mails de notificação de evento %s: %s', ev_id, exc)
+
     return jsonify({'id': ev_id, 'success': True}), 201
 
 
@@ -871,6 +1408,8 @@ def get_benefits():
 @app.route('/api/benefits', methods=['POST'])
 @login_required
 def create_benefit():
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
     data = request.get_json()
     b_id = str(uuid.uuid4())
     conn = get_db()
@@ -887,6 +1426,8 @@ def create_benefit():
 @app.route('/api/benefits/<b_id>', methods=['DELETE'])
 @login_required
 def delete_benefit(b_id):
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
     conn = get_db()
     c = conn.cursor()
     c.execute("UPDATE benefits SET active=0 WHERE id=%s", (b_id,))
@@ -916,6 +1457,8 @@ def get_recognitions():
 @app.route('/api/recognitions', methods=['POST'])
 @login_required
 def create_recognition():
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
     data = request.get_json()
     r_id = str(uuid.uuid4())
     conn = get_db()
@@ -955,6 +1498,8 @@ def get_knowledge():
 @app.route('/api/knowledge', methods=['POST'])
 @login_required
 def create_knowledge():
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
     data = request.get_json()
     k_id = str(uuid.uuid4())
     conn = get_db()
@@ -1033,6 +1578,8 @@ def get_performance():
 @app.route('/api/performance', methods=['POST'])
 @login_required
 def create_performance():
+    if session.get('user_role') not in ('admin', 'lideranca'):
+        return jsonify({'error': 'Acesso negado'}), 403
     data = request.get_json()
     pr_id = str(uuid.uuid4())
     scores = json.dumps(data.get('scores', {}))
@@ -1051,6 +1598,7 @@ def create_performance():
 @app.route('/api/users', methods=['GET'])
 @login_required
 def get_users():
+    return jsonify({'error': 'Gerenciamento de usuários agora é feito pelo Valore Hub.'}), 403
     if session.get('user_role') != 'admin':
         return jsonify({'error': 'Acesso negado'}), 403
     conn = get_db()
@@ -1064,6 +1612,7 @@ def get_users():
 @app.route('/api/users', methods=['POST'])
 @login_required
 def create_user():
+    return jsonify({'error': 'Gerenciamento de usuários agora é feito pelo Valore Hub.'}), 403
     if session.get('user_role') != 'admin':
         return jsonify({'error': 'Acesso negado'}), 403
     data = request.get_json()
@@ -1088,6 +1637,7 @@ def create_user():
 @app.route('/api/users/<user_id>/password', methods=['PUT'])
 @login_required
 def change_password(user_id):
+    return jsonify({'error': 'Gerenciamento de usuários agora é feito pelo Valore Hub.'}), 403
     if session.get('user_id') != user_id and session.get('user_role') != 'admin':
         return jsonify({'error': 'Acesso negado'}), 403
     data = request.get_json()
@@ -1103,6 +1653,7 @@ def change_password(user_id):
 @app.route('/api/users/<user_id>/toggle', methods=['PUT'])
 @login_required
 def toggle_user_active(user_id):
+    return jsonify({'error': 'Gerenciamento de usuários agora é feito pelo Valore Hub.'}), 403
     if session.get('user_role') != 'admin':
         return jsonify({'error': 'Acesso negado'}), 403
     # Protege o próprio admin de se desativar
@@ -1185,7 +1736,7 @@ def export_employees():
 @app.route('/api/employees/import', methods=['POST'])
 @login_required
 def import_employees():
-    if session.get('user_role') not in ('admin', 'rh'):
+    if session.get('user_role') != 'admin':
         return jsonify({'error': 'Acesso negado'}), 403
 
     file = request.files.get('file')
@@ -1228,6 +1779,7 @@ def import_employees():
         c = conn.cursor()
         inserted = 0
         skipped = 0
+        novos_para_hub = []
 
         for row in rows:
             name  = get_field(row, 'name', 'Nome', 'nome')
@@ -1262,11 +1814,18 @@ def import_employees():
                 get_field(row, 'status', 'Status') or 'active',
                 get_field(row, 'notes', 'Observa\u00e7\u00f5es', 'Observacoes', 'observacoes'),
             ))
+            novos_para_hub.append((
+                name, email,
+                get_field(row, 'department', 'Departamento', 'departamento'),
+                get_field(row, 'position', 'Cargo', 'cargo'),
+            ))
             inserted += 1
 
         conn.commit()
         conn.close()
         log_action(session['user_id'], 'IMPORT', 'employee', None, f'{inserted} importados')
+        for nome_novo, email_novo, dept_novo, cargo_novo in novos_para_hub:
+            provisionar_usuario_hub(nome_novo, email_novo, dept_novo, cargo_novo)
         return jsonify({'success': True, 'inserted': inserted, 'skipped': skipped})
 
     except Exception as e:
@@ -1305,6 +1864,8 @@ def get_disc(emp_id):
 @app.route('/api/employees/<emp_id>/disc', methods=['POST'])
 @login_required
 def save_disc(emp_id):
+    if session.get('user_role') not in ('admin', 'lideranca'):
+        return jsonify({'error': 'Acesso negado'}), 403
     data = request.get_json()
     answers = data.get('answers', [])
     # answers é lista de strings: 'D', 'I', 'S' ou 'C'
