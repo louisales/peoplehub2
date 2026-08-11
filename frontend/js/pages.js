@@ -148,6 +148,7 @@ async function renderColaboradores() {
     <button class="btn-secondary" onclick="exportEmployees()" title="Exportar CSV"><i class="fa-solid fa-file-csv"></i> Exportar</button>
     <button class="btn-secondary" onclick="document.getElementById('import-file').click()" title="Importar planilha"><i class="fa-solid fa-file-arrow-up"></i> Importar</button>
     <input type="file" id="import-file" accept=".csv,.xls,.xlsx" style="display:none" onchange="importEmployees(this)">
+    ${userCan("admin") ? `<button class="btn-secondary" onclick="openDuplicates()" title="Ver colaboradores com nome ou e-mail repetido (ativos e inativos)"><i class="fa-solid fa-clone"></i> Duplicados</button>` : ""}
     <div style="display:flex;border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden">
       <button id="btn-view-grid" onclick="setEmpView('grid')" style="padding:7px 12px;border:none;background:var(--primary);color:#fff;cursor:pointer;font-size:13px" title="Quadros"><i class="fa-solid fa-grip"></i></button>
       <button id="btn-view-list" onclick="setEmpView('list')" style="padding:7px 12px;border:none;background:var(--surface);color:var(--text-2);cursor:pointer;font-size:13px" title="Lista"><i class="fa-solid fa-list"></i></button>
@@ -318,6 +319,80 @@ async function exportEmployees() {
     URL.revokeObjectURL(url);
     showToast('Exportação concluída!');
   } catch { showToast('Erro ao exportar', 'error'); }
+}
+
+// ─── DUPLICADOS (nome ou e-mail repetido, considerando ativos e inativos) ──────
+async function openDuplicates() {
+  // status='' contorna o filtro padrão (que só traz ativos) e traz todo mundo,
+  // inclusive inativos como o Lucca — que não aparecem na grade normal.
+  const all = await api.get('/employees', { status: '' }) || [];
+
+  const byEmail = {}, byName = {};
+  all.forEach(e => {
+    const email = (e.email || '').trim().toLowerCase();
+    const name = (e.name || '').trim().toLowerCase();
+    if (email) (byEmail[email] = byEmail[email] || []).push(e);
+    if (name) (byName[name] = byName[name] || []).push(e);
+  });
+
+  const flagged = new Map(); // id -> { emp, reasons: Set }
+  const addGroup = (groups, reasonFn) => {
+    Object.values(groups).filter(g => g.length > 1).forEach(g => {
+      g.forEach(e => {
+        if (!flagged.has(e.id)) flagged.set(e.id, { emp: e, reasons: new Set() });
+        flagged.get(e.id).reasons.add(reasonFn(g.filter(x => x.id !== e.id)));
+      });
+    });
+  };
+  addGroup(byEmail, others => `mesmo e-mail de ${others.map(x => x.name).join(', ')}`);
+  addGroup(byName, others => `mesmo nome de ${others.map(x => x.name).join(', ')}`);
+
+  const list = [...flagged.values()];
+
+  if (!list.length) {
+    openModal('Colaboradores Duplicados', `<p style="color:var(--text-3);font-size:13px;text-align:center;padding:20px 0">Nenhum colaborador com nome ou e-mail repetido encontrado.</p>`);
+    return;
+  }
+
+  const rows = list.map(({ emp, reasons }) => `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+      ${avatarHtml(emp.name, 40)}
+      <div style="flex:1">
+        <div style="font-size:13.5px;font-weight:600">${emp.name} ${statusBadge(emp.status)}</div>
+        <div style="font-size:11.5px;color:var(--text-2)">${emp.email || '—'} · ${emp.department || 'Sem departamento'}</div>
+        <div style="font-size:11px;color:#dc2626;margin-top:2px"><i class="fa-solid fa-triangle-exclamation"></i> ${[...reasons].join(' · ')}</div>
+      </div>
+      <button class="btn-danger" style="flex-shrink:0" onclick="deletePermanentEmployee('${emp.id}', '${(emp.name || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-trash"></i> Excluir</button>
+    </div>`).join('');
+
+  openModal('Colaboradores Duplicados', `
+    <div style="margin-bottom:8px;color:var(--text-2);font-size:13px">Perfis com nome ou e-mail iguais a outro cadastro (considerando ativos e inativos). Revise antes de excluir.</div>
+    <div>${rows}</div>
+  `, 'lg');
+}
+
+function deletePermanentEmployee(id, name) {
+  openModal('Excluir Permanentemente', `
+    <div style="margin-bottom:16px;color:var(--text-2);font-size:13.5px">
+      <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626;margin-right:6px"></i>
+      Tem certeza que deseja excluir <strong>${name}</strong> permanentemente? Essa ação apaga todos os dados desse colaborador do sistema e <strong>não pode ser desfeita</strong>.
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="openDuplicates()">Cancelar</button>
+      <button class="btn-danger" onclick="confirmDeletePermanent('${id}')"><i class="fa-solid fa-trash"></i> Excluir Definitivamente</button>
+    </div>
+  `);
+}
+
+async function confirmDeletePermanent(id) {
+  const res = await api.delete('/employees/' + id + '/permanent');
+  if (res && res.success) {
+    showToast('Colaborador excluído permanentemente');
+    _allEmployees = [];
+    openDuplicates();
+  } else {
+    showToast('Erro ao excluir', 'error');
+  }
 }
 
 async function importEmployees(input) {
