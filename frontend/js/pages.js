@@ -25,11 +25,8 @@ function getDeptIcon(dept) {
 }
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
-let _dashboardStats = {};
-
 async function renderDashboard() {
   const stats = await api.get('/dashboard/stats') || {};
-  _dashboardStats = stats;
   const deptBars = (stats.dept_counts || []).map(d => {
     const pct = stats.employees ? Math.round((d.c / stats.employees) * 100) : 0;
     return `
@@ -99,10 +96,6 @@ async function renderDashboard() {
       <div class="stat-icon purple"><i class="fa-solid fa-trophy"></i></div>
       <div><div class="stat-value">${stats.recognitions || 0}</div><div class="stat-label">Reconhecimentos</div></div>
     </div>
-    <div class="stat-card" style="cursor:pointer" onclick="openInactiveByMonth()" title="Ver detalhamento por competência">
-      <div class="stat-icon red"><i class="fa-solid fa-user-slash"></i></div>
-      <div><div class="stat-value">${stats.inactive_count || 0}</div><div class="stat-label">Colaboradores Inativos</div></div>
-    </div>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
@@ -130,35 +123,13 @@ async function renderDashboard() {
 </div>`;
 }
 
-function openInactiveByMonth() {
-  const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const byMonth = {};
-  (_dashboardStats.inactive_by_month_current_year || []).forEach(row => {
-    byMonth[row.month] = row.c;
-  });
-  const year = new Date().getFullYear();
-  const total = Object.values(byMonth).reduce((a, b) => a + b, 0);
-
-  const rows = months.map((month, i) => {
-    const count = byMonth[i + 1] || 0;
-    const isCurrent = i === new Date().getMonth();
-    return `
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)${isCurrent ? ';background:var(--accent-light)' : ''}">
-        <div style="flex:1;font-size:13px;font-weight:${isCurrent ? '600' : '500'}">${isCurrent ? '🎉 ' : ''}${month}</div>
-        <div style="font-size:14px;font-weight:600;color:${count ? '#b91c1c' : 'var(--text-3)'}">${count}</div>
-      </div>`;
-  }).join('');
-
-  openModal(`Inativações por Competência — ${year}`, `
-    <div style="margin-bottom:12px;color:var(--text-2);font-size:13px">Total de inativações em ${year}: <strong>${total}</strong></div>
-    <div>${rows}</div>
-  `);
-}
-
 // ─── COLABORADORES ────────────────────────────────────────────────────────────
+let _inactiveEmployees = [];
+
 async function renderColaboradores() {
   const employees = await api.get('/employees') || [];
   _allEmployees = employees;
+  _inactiveEmployees = await api.get('/employees', { status: 'inactive' }) || [];
 
   // Totalizador por área
   const deptCounts = {};
@@ -213,6 +184,15 @@ async function renderColaboradores() {
       <div>
         <div style="font-size:22px;font-weight:700;color:#ca8a04">${totalPais}</div>
         <div style="font-size:12px;color:var(--text-2)">Pais / Mães</div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 20px;display:flex;align-items:center;gap:12px;min-width:160px;cursor:pointer" onclick="openInactiveByMonth()" title="Ver inativações por competência">
+      <div style="width:40px;height:40px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center">
+        <i class="fa-solid fa-user-slash" style="color:#dc2626;font-size:16px"></i>
+      </div>
+      <div>
+        <div style="font-size:22px;font-weight:700;color:#dc2626">${_inactiveEmployees.length}</div>
+        <div style="font-size:12px;color:var(--text-2)">Inativos</div>
       </div>
     </div>
     ${deptOptions.map(d => `
@@ -289,6 +269,42 @@ function setEmpView(mode, silent) {
     if (btnGrid) { btnGrid.style.background='var(--primary)'; btnGrid.style.color='#fff'; }
     if (btnList) { btnList.style.background='var(--surface)'; btnList.style.color='var(--text-2)'; }
   }
+}
+
+function openInactiveByMonth() {
+  const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const year = new Date().getFullYear();
+
+  const byMonth = {};
+  _inactiveEmployees.forEach(e => {
+    if (!e.exit_date) return;
+    const [y, m] = e.exit_date.split('-');
+    if (parseInt(y) !== year) return;
+    const mi = parseInt(m);
+    byMonth[mi] = byMonth[mi] || [];
+    byMonth[mi].push(e);
+  });
+  const total = Object.values(byMonth).reduce((sum, list) => sum + list.length, 0);
+  const semData = _inactiveEmployees.filter(e => !e.exit_date).length;
+
+  const rows = months.map((month, i) => {
+    const emps = byMonth[i + 1] || [];
+    const isCurrent = i === new Date().getMonth();
+    return `
+      <div style="padding:8px 0;border-bottom:1px solid var(--border)${isCurrent ? ';background:var(--accent-light)' : ''}">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="flex:1;font-size:13px;font-weight:${isCurrent ? '600' : '500'}">${isCurrent ? '🎉 ' : ''}${month}</div>
+          <div style="font-size:14px;font-weight:600;color:${emps.length ? '#dc2626' : 'var(--text-3)'}">${emps.length}</div>
+        </div>
+        ${emps.length ? `<div style="font-size:11.5px;color:var(--text-3);margin-top:4px">${emps.map(e => e.name).join(', ')}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  openModal(`Inativações por Competência — ${year}`, `
+    <div style="margin-bottom:12px;color:var(--text-2);font-size:13px">Total de inativações em ${year}: <strong>${total}</strong></div>
+    <div>${rows}</div>
+    ${semData ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:12px;color:var(--text-3)">${semData} colaborador${semData !== 1 ? 'es' : ''} inativo${semData !== 1 ? 's' : ''} sem data de saída registrada (não entram na contagem acima).</div>` : ''}
+  `);
 }
 
 async function exportEmployees() {

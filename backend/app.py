@@ -982,17 +982,6 @@ def dashboard_stats():
     c.execute("SELECT department, COUNT(*) as c FROM employees WHERE status='active' GROUP BY department ORDER BY c DESC")
     dept_counts = rows_to_list(c.fetchall(), c)
 
-    c.execute("SELECT COUNT(*) FROM employees WHERE status='inactive'")
-    inactive_count = c.fetchone()[0]
-
-    current_year = date.today().year
-    c.execute("""SELECT EXTRACT(MONTH FROM exit_date::date)::int as month, COUNT(*) as c
-                 FROM employees
-                 WHERE status='inactive' AND exit_date IS NOT NULL AND exit_date != ''
-                 AND EXTRACT(YEAR FROM exit_date::date) = %s
-                 GROUP BY month ORDER BY month""", (current_year,))
-    inactive_by_month = rows_to_list(c.fetchall(), c)
-
     conn.close()
     return jsonify({
         'employees': employees,
@@ -1002,9 +991,7 @@ def dashboard_stats():
         'birthdays_this_month': birthdays,
         'work_anniversaries_this_month': work_anniversaries,
         'recent_news': recent_news,
-        'dept_counts': dept_counts,
-        'inactive_count': inactive_count,
-        'inactive_by_month_current_year': inactive_by_month
+        'dept_counts': dept_counts
     })
 
 
