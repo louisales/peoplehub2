@@ -85,6 +85,42 @@ def provisionar_usuario_hub(nome, email, departamento, cargo=''):
         )
     except requests.RequestException as exc:
         app.logger.warning('Falha ao provisionar usuário no Hub (email=%s): %s', email, exc)
+
+
+def desprovisionar_usuario_hub(email):
+    """
+    Desligamento do funcionário -> exclui o usuário no Valore Hub.
+
+    O Hub guarda antes, sozinho, quais grupos e acessos a portais a pessoa tinha
+    (modelo DesligamentoRH), pra que uma readmissão futura devolva tudo
+    automaticamente. O histórico de trabalho dela nos outros portais não é
+    afetado: cada portal tem cadastro de usuário próprio, no banco dele.
+
+    Falha aberta, igual à admissão: se o Hub estiver fora do ar, o desligamento
+    no RH não é bloqueado, só fica o aviso no log.
+    """
+    if not email or '@' not in email or not RH_PROVISIONING_API_KEY:
+        return
+    try:
+        requests.post(
+            f'{HUB_BASE_URL}/api/provisioning/rh/desligamento/',
+            json={'api_key': RH_PROVISIONING_API_KEY, 'email': email},
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        app.logger.warning('Falha ao desprovisionar usuário no Hub (email=%s): %s', email, exc)
+
+
+def _email_do_funcionario(emp_id):
+    """E-mail do funcionário, lido antes do desligamento pra poder avisar o Hub."""
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT email FROM employees WHERE id=%s", (emp_id,))
+    linha = c.fetchone()
+    conn.close()
+    return (linha[0] if linha else '') or ''
+
+
 SSO_DASHBOARD_PATH = os.environ.get('SSO_DASHBOARD_PATH', '/')
 
 # Mapeia o perfil do Hub (RH_PORTAL_ROLE_CHOICES) para os valores de `role`
@@ -1083,6 +1119,7 @@ def delete_employee(emp_id):
     data = request.get_json(silent=True) or {}
     exit_date = data.get('exit_date')
     reason = (data.get('notes') or '').strip()
+    email_funcionario = _email_do_funcionario(emp_id)
 
     conn = get_db()
     c = conn.cursor()
@@ -1100,6 +1137,10 @@ def delete_employee(emp_id):
                   (exit_date, emp_id))
     conn.commit()
     conn.close()
+
+    # Desligou no RH -> exclui do Hub. O Hub guarda os acessos antes, pra readmissao.
+    if email_funcionario:
+        desprovisionar_usuario_hub(email_funcionario)
     return jsonify({'success': True})
 
 
