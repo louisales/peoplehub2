@@ -507,6 +507,33 @@ def init_db():
     # Data de saída do colaborador, capturada na inativação.
     c.execute("ALTER TABLE employees ADD COLUMN IF NOT EXISTS exit_date TEXT")
 
+    # Plano de Saúde e Dependentes — extensão do perfil do colaborador, no
+    # mesmo padrão de disc_results/career_history (tabela satélite vinculada
+    # a employees.id). Dado sensível: acesso restrito a admin nas rotas.
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS employee_health_plan (
+            id TEXT PRIMARY KEY,
+            employee_id TEXT UNIQUE NOT NULL REFERENCES employees(id),
+            has_plan BOOLEAN DEFAULT FALSE,
+            operator TEXT,
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS employee_dependents (
+            id TEXT PRIMARY KEY,
+            employee_id TEXT NOT NULL REFERENCES employees(id),
+            name TEXT NOT NULL,
+            relationship TEXT,
+            birth_date TEXT,
+            included_in_plan BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     # Simplificação de perfis: 'rh' e 'gestor' deixam de existir — quem tinha
     # esses perfis passa a ser 'admin' (perfil único de acesso total). Idempotente.
     c.execute("UPDATE users SET role = 'admin' WHERE role IN ('rh', 'gestor')")
@@ -1990,6 +2017,112 @@ def add_career(emp_id):
         return jsonify({'error': str(e)}), 500
     conn.close()
     return jsonify({'success': True, 'id': rec_id})
+
+
+# ── PLANO DE SAÚDE E DEPENDENTES ────────────────────────────────────────────────
+# Dado pessoal sensível (saúde) — restrito a admin, mesma régua de acesso da
+# tela Perfil do Colaborador (só admin abre o modal do colaborador no frontend).
+@app.route('/api/employees/<emp_id>/health-plan', methods=['GET'])
+@login_required
+def get_health_plan(emp_id):
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT * FROM employee_health_plan WHERE employee_id = %s", (emp_id,))
+    row = c.fetchone()
+    result = row_to_dict(row, c) if row else None
+    conn.close()
+    return jsonify(result)
+
+@app.route('/api/employees/<emp_id>/health-plan', methods=['PUT'])
+@login_required
+def save_health_plan(emp_id):
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    data = request.get_json()
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT id FROM employee_health_plan WHERE employee_id = %s", (emp_id,))
+    existing = c.fetchone()
+    if existing:
+        c.execute(
+            "UPDATE employee_health_plan SET has_plan=%s, operator=%s, notes=%s, updated_at=CURRENT_TIMESTAMP WHERE employee_id=%s",
+            (data.get('has_plan', False), data.get('operator'), data.get('notes'), emp_id)
+        )
+    else:
+        c.execute(
+            "INSERT INTO employee_health_plan (id, employee_id, has_plan, operator, notes) VALUES (%s,%s,%s,%s,%s)",
+            (str(uuid.uuid4()), emp_id, data.get('has_plan', False), data.get('operator'), data.get('notes'))
+        )
+    conn.commit()
+    conn.close()
+    log_action(session['user_id'], 'UPDATE', 'employee_health_plan', emp_id)
+    return jsonify({'success': True})
+
+@app.route('/api/employees/<emp_id>/dependents', methods=['GET'])
+@login_required
+def get_dependents(emp_id):
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT * FROM employee_dependents WHERE employee_id = %s ORDER BY created_at ASC", (emp_id,))
+    rows = rows_to_list(c.fetchall(), c)
+    conn.close()
+    return jsonify(rows)
+
+@app.route('/api/employees/<emp_id>/dependents', methods=['POST'])
+@login_required
+def add_dependent(emp_id):
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    data = request.get_json()
+    if not (data.get('name') or '').strip():
+        return jsonify({'error': 'Nome do dependente é obrigatório'}), 400
+    dep_id = str(uuid.uuid4())
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO employee_dependents (id, employee_id, name, relationship, birth_date, included_in_plan) VALUES (%s,%s,%s,%s,%s,%s)",
+        (dep_id, emp_id, data.get('name'), data.get('relationship'), data.get('birth_date'), data.get('included_in_plan', False))
+    )
+    conn.commit()
+    conn.close()
+    log_action(session['user_id'], 'CREATE', 'employee_dependent', dep_id)
+    return jsonify({'success': True, 'id': dep_id})
+
+@app.route('/api/employees/<emp_id>/dependents/<dep_id>', methods=['PUT'])
+@login_required
+def update_dependent(emp_id, dep_id):
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    data = request.get_json()
+    if not (data.get('name') or '').strip():
+        return jsonify({'error': 'Nome do dependente é obrigatório'}), 400
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        "UPDATE employee_dependents SET name=%s, relationship=%s, birth_date=%s, included_in_plan=%s, updated_at=CURRENT_TIMESTAMP WHERE id=%s AND employee_id=%s",
+        (data.get('name'), data.get('relationship'), data.get('birth_date'), data.get('included_in_plan', False), dep_id, emp_id)
+    )
+    conn.commit()
+    conn.close()
+    log_action(session['user_id'], 'UPDATE', 'employee_dependent', dep_id)
+    return jsonify({'success': True})
+
+@app.route('/api/employees/<emp_id>/dependents/<dep_id>', methods=['DELETE'])
+@login_required
+def delete_dependent(emp_id, dep_id):
+    if session.get('user_role') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("DELETE FROM employee_dependents WHERE id = %s AND employee_id = %s", (dep_id, emp_id))
+    conn.commit()
+    conn.close()
+    log_action(session['user_id'], 'DELETE', 'employee_dependent', dep_id)
+    return jsonify({'success': True})
 
 
 # ── POLÍTICAS DE EMPRESA ─────────────────────────────────────────────────────

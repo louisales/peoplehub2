@@ -19,6 +19,7 @@ function getDeptIcon(dept) {
     'Operações':             { icon: 'fa-gears',             color: '#64748b', bg: '#f1f5f9' },
     'Administrativo':        { icon: 'fa-briefcase',         color: '#94a3b8', bg: '#f1f5f9' },
     'Paralegal':             { icon: 'fa-scale-balanced',    color: '#475569', bg: '#e2e8f0' },
+    'Consultoria':           { icon: 'fa-lightbulb',         color: '#0891b2', bg: '#e0f2fe' },
     'Jurídico':              { icon: 'fa-gavel',             color: '#dc2626', bg: '#fee2e2' },
   };
   return icons[dept] || { icon: 'fa-building', color: '#7c3aed', bg: '#ede9fe' };
@@ -499,6 +500,7 @@ async function openEmployeeDetail(id) {
       <button onclick="showEmpTab('info','${e.id}')" id="tab-info" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px">Informações</button>
       <button onclick="showEmpTab('history','${e.id}')" id="tab-history" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-2)">Histórico de Carreira</button>
       <button onclick="showEmpTab('disc','${e.id}')" id="tab-disc" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-2)">DISC</button>
+      <button onclick="showEmpTab('health','${e.id}')" id="tab-health" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-2)">Plano de Saúde</button>
     </div>
     <div id="emp-tab-info">
       <div class="detail-grid">
@@ -520,6 +522,9 @@ async function openEmployeeDetail(id) {
     <div id="emp-tab-disc" style="display:none">
       <div id="disc-content-${e.id}">Carregando...</div>
     </div>
+    <div id="emp-tab-health" style="display:none">
+      <div id="health-content-${e.id}">Carregando...</div>
+    </div>
     <div class="modal-footer">
       ${userCan("edit") ? `<button class="btn-secondary" onclick="openEditEmployee('${e.id}')"><i class="fa-solid fa-pen"></i> Editar</button>` : ""}
       ${userCan("admin") ? `<button class="btn-danger" onclick="confirmDeactivate('${e.id}')"><i class="fa-solid fa-user-minus"></i> Inativar</button>` : ""}
@@ -528,7 +533,7 @@ async function openEmployeeDetail(id) {
 }
 
 function showEmpTab(tab, empId) {
-  ['info','history','disc'].forEach(t => {
+  ['info','history','disc','health'].forEach(t => {
     const el = document.getElementById('emp-tab-' + t);
     if (el) el.style.display = t === tab ? '' : 'none';
     const btn = document.getElementById('tab-' + t);
@@ -537,6 +542,7 @@ function showEmpTab(tab, empId) {
       : 'padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-2)';
   });
   if (tab === 'disc' && empId) loadDiscTab(empId);
+  if (tab === 'health' && empId) loadHealthTab(empId);
 }
 
 async function loadDiscTab(empId) {
@@ -612,8 +618,166 @@ async function loadDiscTab(empId) {
   `;
 }
 
+// ─── PLANO DE SAÚDE E DEPENDENTES ──────────────────────────────────────────────
+const GRAUS_PARENTESCO = ['Cônjuge/Companheiro(a)', 'Filho(a)', 'Enteado(a)', 'Pai', 'Mãe', 'Outro'];
+
+async function loadHealthTab(empId) {
+  const container = document.getElementById('health-content-' + empId);
+  if (!container) return;
+  const [plan, deps] = await Promise.all([
+    api.get('/employees/' + empId + '/health-plan'),
+    api.get('/employees/' + empId + '/dependents'),
+  ]);
+  // Guardar dados carregados para os modais de edição (evita nova chamada à API)
+  window._healthDataForEdit = { empId, plan: plan || null, deps: deps || [] };
+
+  const canEdit = userCan('edit');
+
+  const depsHtml = (deps || []).length === 0
+    ? '<div style="color:var(--text-3);font-size:13px;text-align:center;padding:16px 0">Nenhum dependente cadastrado</div>'
+    : deps.map(d => `
+      <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);align-items:center">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px">👤</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600">${d.name}</div>
+          <div style="font-size:12px;color:var(--text-2);margin-top:2px">${d.relationship || '—'} · ${fmtDate(d.birth_date)}</div>
+          <div style="font-size:11.5px;color:var(--text-3);margin-top:2px">${d.included_in_plan ? '✅ Incluído no plano' : 'Não incluído no plano'}</div>
+        </div>
+        ${canEdit ? `
+        <div style="display:flex;gap:10px;flex-shrink:0">
+          <button onclick="openEditDependent('${empId}','${d.id}')" style="border:none;background:none;cursor:pointer;color:var(--text-2);font-size:13px" title="Editar"><i class="fa-solid fa-pen"></i></button>
+          <button onclick="confirmDeleteDependent('${empId}','${d.id}')" style="border:none;background:none;cursor:pointer;color:#ef4444;font-size:13px" title="Remover"><i class="fa-solid fa-trash"></i></button>
+        </div>` : ''}
+      </div>`).join('');
+
+  container.innerHTML = `
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">🏥 Plano de saúde</div>
+    <div class="detail-grid">
+      <div class="detail-item"><label>Possui plano de saúde</label><span>${plan && plan.has_plan ? '✅ Sim' : 'Não'}</span></div>
+      ${plan && plan.has_plan ? `<div class="detail-item"><label>Operadora/Plano</label><span>${plan.operator || '—'}</span></div>` : ''}
+    </div>
+    ${plan && plan.notes ? `<hr class="divider"><div style="font-size:13px;color:var(--text-2)">${plan.notes}</div>` : ''}
+    ${canEdit ? `<button class="btn-secondary" style="margin-top:12px;width:100%" onclick="openEditHealthPlan('${empId}')"><i class="fa-solid fa-pen"></i> ${plan ? 'Editar' : 'Cadastrar'} Plano de Saúde</button>` : ''}
+
+    <hr class="divider" style="margin:20px 0 16px">
+
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">👨‍👩‍👧 Dependentes</div>
+    <div style="max-height:220px;overflow-y:auto">${depsHtml}</div>
+    ${canEdit ? `<button class="btn-secondary" style="margin-top:12px;width:100%" onclick="openAddDependent('${empId}')"><i class="fa-solid fa-plus"></i> Adicionar Dependente</button>` : ''}
+  `;
+}
+
+function openEditHealthPlan(empId) {
+  const plan = window._healthDataForEdit?.plan || {};
+  openModal('Plano de Saúde', `
+    <div class="form-group">
+      <label>Possui plano de saúde?</label>
+      <select id="hp-has-plan" onchange="document.getElementById('hp-operator-group').style.display = this.value==='1' ? '' : 'none'">
+        <option value="0" ${!plan.has_plan ? 'selected' : ''}>Não</option>
+        <option value="1" ${plan.has_plan ? 'selected' : ''}>Sim</option>
+      </select>
+    </div>
+    <div class="form-group" id="hp-operator-group" style="${plan.has_plan ? '' : 'display:none'}">
+      <label>Operadora/Plano</label>
+      <input type="text" id="hp-operator" value="${plan.operator || ''}" placeholder="Ex: Bradesco Saúde, Unimed...">
+    </div>
+    <div class="form-group">
+      <label>Observação</label>
+      <textarea id="hp-notes" placeholder="Informações adicionais...">${plan.notes || ''}</textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveHealthPlan('${empId}')"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  `);
+}
+
+async function saveHealthPlan(empId) {
+  const body = {
+    has_plan: document.getElementById('hp-has-plan')?.value === '1',
+    operator: document.getElementById('hp-operator')?.value,
+    notes: document.getElementById('hp-notes')?.value,
+  };
+  const res = await api.put('/employees/' + empId + '/health-plan', body);
+  if (res?.success) {
+    closeModal();
+    showToast('Plano de saúde atualizado!');
+    openEmployeeDetail(empId);
+    setTimeout(() => showEmpTab('health', empId), 300);
+  } else showToast('Erro ao salvar', 'error');
+}
+
+function openAddDependent(empId) {
+  openModal('Adicionar Dependente', `
+    <div class="form-group"><label>Nome *</label><input type="text" id="dep-name" placeholder="Nome completo"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Grau de parentesco</label>
+        <select id="dep-relationship"><option value="">Selecione...</option>${GRAUS_PARENTESCO.map(r=>`<option value="${r}">${r}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label>Data de nascimento</label><input type="date" id="dep-birth"></div>
+    </div>
+    <div class="form-group"><label><input type="checkbox" id="dep-included"> Incluído no plano de saúde</label></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveDependent('${empId}')"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  `);
+}
+
+function openEditDependent(empId, depId) {
+  const dep = (window._healthDataForEdit?.deps || []).find(d => d.id === depId);
+  if (!dep) return;
+  openModal('Editar Dependente', `
+    <div class="form-group"><label>Nome *</label><input type="text" id="dep-name" value="${dep.name || ''}"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Grau de parentesco</label>
+        <select id="dep-relationship">
+          <option value="">Selecione...</option>
+          ${GRAUS_PARENTESCO.map(r=>`<option value="${r}" ${dep.relationship===r?'selected':''}>${r}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>Data de nascimento</label><input type="date" id="dep-birth" value="${dep.birth_date || ''}"></div>
+    </div>
+    <div class="form-group"><label><input type="checkbox" id="dep-included" ${dep.included_in_plan ? 'checked' : ''}> Incluído no plano de saúde</label></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveDependent('${empId}','${depId}')"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  `);
+}
+
+async function saveDependent(empId, depId) {
+  const name = document.getElementById('dep-name')?.value?.trim();
+  if (!name) { showToast('Nome é obrigatório', 'error'); return; }
+  const body = {
+    name,
+    relationship: document.getElementById('dep-relationship')?.value,
+    birth_date: document.getElementById('dep-birth')?.value,
+    included_in_plan: !!document.getElementById('dep-included')?.checked,
+  };
+  const res = depId
+    ? await api.put('/employees/' + empId + '/dependents/' + depId, body)
+    : await api.post('/employees/' + empId + '/dependents', body);
+  if (res?.success) {
+    closeModal();
+    showToast(depId ? 'Dependente atualizado!' : 'Dependente adicionado!');
+    openEmployeeDetail(empId);
+    setTimeout(() => showEmpTab('health', empId), 300);
+  } else showToast('Erro ao salvar dependente', 'error');
+}
+
+async function confirmDeleteDependent(empId, depId) {
+  if (!confirm('Remover este dependente?')) return;
+  const res = await api.delete('/employees/' + empId + '/dependents/' + depId);
+  if (res?.success) {
+    showToast('Dependente removido');
+    openEmployeeDetail(empId);
+    setTimeout(() => showEmpTab('health', empId), 300);
+  } else showToast('Erro ao remover', 'error');
+}
+
 function openAddCareerEvent(empId) {
-  const DEPTS = ['Contábil','Fiscal','Departamento Pessoal','Sucesso do Cliente','Administrativo','Paralegal','Diretoria','Marketing','Tecnologia'];
+  const DEPTS = ['Contábil','Fiscal','Departamento Pessoal','Sucesso do Cliente','Administrativo','Paralegal','Diretoria','Marketing','Tecnologia','Consultoria'];
   const CARGOS = ['Estagiário','Auxiliar','Assistente','Analista Júnior I','Analista Júnior II','Analista Pleno I','Analista Pleno II','Analista Sênior I','Analista Sênior II','Supervisor','Gerente'];
   openModal('Registrar Movimentação', `
     <div class="form-group"><label>Tipo de movimentação</label>
@@ -683,6 +847,7 @@ function openNewEmployee() {
           <option value="Diretoria">Diretoria</option>
           <option value="Marketing">Marketing</option>
           <option value="Tecnologia">Tecnologia</option>
+          <option value="Consultoria">Consultoria</option>
         </select>
       </div>
       <div class="form-group"><label>Cargo</label>
@@ -780,6 +945,7 @@ async function openEditEmployee(id) {
           <option value="Diretoria" ${e.department==='Diretoria'?'selected':''}>Diretoria</option>
           <option value="Marketing" ${e.department==='Marketing'?'selected':''}>Marketing</option>
           <option value="Tecnologia" ${e.department==='Tecnologia'?'selected':''}>Tecnologia</option>
+          <option value="Consultoria" ${e.department==='Consultoria'?'selected':''}>Consultoria</option>
         </select>
       </div>
       <div class="form-group"><label>Cargo</label>
@@ -2339,6 +2505,7 @@ function openNewUser() {
         <option value="Diretoria">Diretoria</option>
         <option value="Marketing">Marketing</option>
         <option value="Tecnologia">Tecnologia</option>
+        <option value="Consultoria">Consultoria</option>
         <option value="BPO Financeiro">BPO Financeiro</option>
         <option value="Financeiro">Financeiro</option>
       </select>
